@@ -36,7 +36,7 @@
 
 ## 5. 대기 중(사용자 결정 필요)
 
-- 다음 HTML 공유본: 만들 때 그 시점 앱 기능 전부 구현(지금 공유본 v4는 예전 홈·기업 탐색). 그때 함께 지울 것: theme `--hero-*`, TYPE `hero`·`nav-no`, `scripts/interactive`의 예전 홈·C01G 코드.
+- HTML 공유본 v5(2026-10-02) 완료: 앱 기능 전부 + 렌더링 맞춤. 남은 것: 1280px에서 기업 탐색 '기준' 단추 묶음 약간 넘침(옆 스크롤), file://에서 3D 동작 미확인.
 - 예전부터 남은 확인 항목:
   - `analytics.postings.filter_by_profile`(테스트에서만 쓰임) 삭제 여부
   - echarts.min.js 두 곳(scripts/interactive/vendor, static/vendor) 중복

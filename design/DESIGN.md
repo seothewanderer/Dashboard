@@ -501,6 +501,13 @@ Source: the teammate's home-only build (`home-only.html`). Values are copied fro
   - **Thin horizontal bars** (`hbar(thin=True)`): 2/3 bar width (the same as the 03/04 thin bars) and a 30px row (`CHART.row_h_thin`).
   - **04 채용 현황:** the 경력·학력 charts use thin bars and sit in a fixed-title expander, '경력·학력 조건 보기', closed by default.
 
+- **Z-round (2026-10-02, rendering fidelity for the v5 share):**
+  - **Narrow KPI tiles** (`.tiles` is an inline-size container): at ≤820px the icon circle and glyph shrink ×.75, padding becomes `--space-sm` / `--space-md`, the number `--type-kpi-size` ×.82 and the label `--type-card-title-size` ×.9. At ≤600px the icon moves above the text (column layout, `--space-sm` padding).
+  - **Home KPI strip** (container `hm`): at ≤760px the chevron is hidden and padding tightens; at ≤640px it becomes 2 columns.
+  - **Share only:** controls (buttons, pills, tabs, labels) never wrap; a chart-card body ≤360px shrinks segmented-button padding to `--space-sm`.
+  - **Fonts in the share:** all five Pretendard weights (400–800) are embedded with `font-display:block`, and the first render waits for them (2.5s cap).
+  - **Removed tokens:** `--hero-*`, TYPE `hero` and `nav-no` (the old SVG home).
+
 ### 12.10 O-round (user requests 2026-10-02, global + 02) — Proposed (not in source)
 
 - **Card base border:** every card has a `--card-border-w` border in `--control` (dark #535353, light #D1D1D1). Defense, drone, goal and picked styles override it as before.

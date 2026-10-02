@@ -31,15 +31,18 @@ from analytics import learning as LN  # noqa: E402
 from analytics import postings as P  # noqa: E402
 from analytics.defense import GROUP_ORDER, TIER  # noqa: E402
 from content.activity_tags import ACTIVITIES, ACTIVITY_BY_MIDDLE  # noqa: E402
-from content.module_meta import MODULE_META, PAGE_DEFAULT  # noqa: E402
+from content.module_meta import MODULE_META, PAGE_DEFAULT, POSTINGS_AS_OF  # noqa: E402
 from content.page_intros import EYEBROW_SUFFIX, HOME_SUBTITLE, HOME_TITLE, PAGE_INTROS  # noqa: E402
-from content.usage_guide import FAQ, STEPS  # noqa: E402
+from content.usage_guide import FAQ, STEPS, STEPS_NOTE  # noqa: E402
 from core import theme  # noqa: E402
 from core.data_loader import read_table  # noqa: E402
 
 SRC = ROOT / "scripts" / "interactive"
 OUT = ROOT / "html"
-FONTS = {400: "Pretendard-Regular.otf", 700: "Pretendard-Bold.otf", 800: "Pretendard-ExtraBold.otf"}
+# 앱(.streamlit/config.toml)과 같은 굵기 5개 — 500·600이 없으면 브라우저가 다른 굵기로 대신 그려 글자 폭이 달라진다(v5 렌더링 맞춤)
+FONTS = {400: "Pretendard-Regular.otf", 500: "Pretendard-Medium.otf", 600: "Pretendard-SemiBold.otf",
+         700: "Pretendard-Bold.otf", 800: "Pretendard-ExtraBold.otf"}
+THREE = ROOT / "static" / "vendor" / "three"   # 3D 홈 드론(Three.js 0.169.0) — HTML 안에 글로 넣어 인터넷 없이
 GEO = ROOT / "data" / "reference" / "skorea_provinces_geo_simple.json"
 REGION_SHORT = {"서울특별시": "서울", "부산광역시": "부산", "대구광역시": "대구", "인천광역시": "인천", "광주광역시": "광주",
                 "대전광역시": "대전", "울산광역시": "울산", "세종특별자치시": "세종", "경기도": "경기", "강원도": "강원",
@@ -102,11 +105,12 @@ def bundle() -> dict:
     return {
         "generated": str(date.today()),
         "theme": {"base": theme.BASE, "modes": theme.MODE, "unscaled": theme.UNSCALED, "images": theme._image_vars() | {f"--kpi-{n}-{s}": theme.img_uri(f"kpi_{n}_{s}") for n in
-                                                       ("company", "revenue", "employee", "posting", "shield") for s in ("rest", "hover")},
+                                                       ("company", "revenue", "employee", "posting", "shield", "job", "learning") for s in ("rest", "hover")},
                   "chart": theme.CHART, "motion": theme.MOTION, "type": {k: list(v) for k, v in theme.TYPE.items()},
                   "font_scale": theme.FONT_SCALE},
         "content": {"intros": PAGE_INTROS, "eyebrow_suffix": EYEBROW_SUFFIX, "home_title": HOME_TITLE,
-                    "home_subtitle": HOME_SUBTITLE, "steps": STEPS, "faq": FAQ, "page_default": PAGE_DEFAULT,
+                    "home_subtitle": HOME_SUBTITLE, "steps": STEPS, "steps_note": STEPS_NOTE, "faq": FAQ, "page_default": PAGE_DEFAULT,
+                    "postings_as_of": POSTINGS_AS_OF,
                     "meta": MODULE_META, "activities": ACTIVITIES, "activity_by_middle": ACTIVITY_BY_MIDDLE},
         "defense": {"group_order": GROUP_ORDER, "tier": TIER},
         "companies": rows(comp, ["company_id", "company_name_normalized", "company_name_variants", "main_business_areas",
@@ -164,15 +168,20 @@ def font_faces() -> str:
     for weight, file in FONTS.items():
         data = base64.b64encode((ROOT / "design" / file).read_bytes()).decode("ascii")
         out.append(f'@font-face{{font-family:"Pretendard";src:url(data:font/otf;base64,{data}) format("opentype");'
-                   f"font-weight:{weight};font-style:normal;font-display:swap}}")
+                   f"font-weight:{weight};font-style:normal;font-display:block}}")   # block: 글꼴 전 대체 글꼴로 그렸다 바뀌며 줄이 밀리지 않게
     return "\n".join(out)
 
 
 # 앱 부품의 JS·CSS를 그대로 가져와 공유본에서도 같은 동작(요청: 02 3D 네트워크·04 지도+막대). 파이썬 import 없이 글로 읽는다
-COMPONENTS = {"G3": ROOT / "components" / "job_graph3d.py", "LCM": ROOT / "components" / "linked_chart_map.py"}
+COMPONENTS = {"G3": ROOT / "components" / "job_graph3d.py", "LCM": ROOT / "components" / "linked_chart_map.py",
+              "HH": ROOT / "components" / "home_hero.py"}   # HH = 3D 홈(요청 P·Q·R): .js·.css 파일을 그대로
 
 
 def _component(path: Path) -> tuple[str, str]:
+    js_file, css_file = path.with_suffix(".js"), path.with_suffix(".css")
+    if js_file.exists():                            # 부품 JS·CSS가 따로 있는 경우(home_hero)
+        js = js_file.read_text(encoding="utf-8")
+        return css_file.read_text(encoding="utf-8"), js.replace("export default function (component)", "return function (component)")
     src = path.read_text(encoding="utf-8")
     css = src.split('_CSS = """', 1)[1].split('"""', 1)[0]
     js = src.split('_JS = """', 1)[1].split('\n"""', 1)[0]
@@ -189,6 +198,8 @@ def build(version: str) -> Path:
              "/*__APP__*/": "\n".join([*(f"const {name} = (() => {{{_component(f)[1]}}})();" for name, f in COMPONENTS.items()),
                                       *((SRC / f).read_text(encoding="utf-8")
                                         for f in ["core.js", "logic.js", "charts.js", "ui.js", "pages.js", "main.js"])]),
+             "/*__THREE__*/": "window.__ddThreeSrc=" + json.dumps({f.name: f.read_text(encoding="utf-8") for f in THREE.glob("*.js")},
+                                                               ensure_ascii=False).replace("</", "<\\/") + ";",
              "__DATA__": data, "__VERSION__": version}
     for k, v in parts.items():
         page = page.replace(k, v)
@@ -199,5 +210,5 @@ def build(version: str) -> Path:
 
 
 if __name__ == "__main__":
-    out = build(sys.argv[1] if len(sys.argv) > 1 else f"v3_수정본_{date.today()}")
+    out = build(sys.argv[1] if len(sys.argv) > 1 else f"v5_수정본_{date.today()}")
     print(f"저장: {out} ({out.stat().st_size / 1_048_576:.1f}MB)")

@@ -4,7 +4,8 @@
  * 바꾼 부분: 화면 전체 상태(S·render·#main) → 이 부품 안 상태(G·HM)와 setStateValue/setTriggerValue,
  *   Three.js CDN → static/vendor/three, 테마 = 토큰 값(core/theme.py --hm-*),
  *   패널을 누르면 그쪽으로 날아간 뒤 그 화면으로 이동(팀원 판은 제자리 반응만) + 홈에 다시 오면 같은 방향에서 돌아옴.
- * 3D renderer·canvas·루프는 창(window)에 하나만 두고 홈에 다시 들어와도 다시 쓴다. */
+ * 3D renderer·canvas·루프는 창(window)에 하나만 두고 홈에 다시 들어와도 다시 쓴다.
+ * HTML 공유본(scripts/build_interactive.py)도 이 파일을 그대로 쓴다: window.__ddThreeSrc에 Three.js 글이 있으면 그것으로 불러온다. */
 function createEngine() {
   "use strict";
   const ROTOR_REV_PER_SEC = 3.0;
@@ -678,7 +679,9 @@ function createEngine() {
   let threeLib = null;
   function loadThree() {
     if (threeLib) return threeLib;
-    const get = (f) => fetch(G.vendor + f).then((r) => { if (!r.ok) throw new Error(`${f} ${r.status}`); return r.text(); });
+    const inline = window.__ddThreeSrc;                                       // HTML 공유본: 파일 안에 넣어 둔 글(인터넷·서버 없이)
+    const get = (f) => (inline && inline[f] != null ? Promise.resolve(inline[f])
+      : fetch(G.vendor + f).then((r) => { if (!r.ok) throw new Error(`${f} ${r.status}`); return r.text(); }));
     const url = (src) => URL.createObjectURL(new Blob([src], { type: "text/javascript" }));
     threeLib = get("three.module.js").then((core) => {
       const coreUrl = url(core);

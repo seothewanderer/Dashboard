@@ -1,5 +1,21 @@
 # report.md — 변경 기록
 
+### 2026-10-02 — 24차: v5 공유 HTML + 렌더링 맞춤
+- Type: Feature / Design
+- Summary: 요청 Z.
+  - html/v5_수정본_2026-10-02.html(16.6MB): v4 이후 앱 기능 전부.
+    - 3D 홈: Three.js 4개 파일을 HTML에 넣고 Blob 모듈로 불러옴 → 인터넷 없이 동작. 실패하면 정지 그림.
+    - 사이드바 01~04 아이콘·04 이름/접기 분리, 기업 탐색(기준 전환·함께 하는 분야·C04A·넘기기·정렬 한 줄), 카드 자동 펼침, 채용 현황 경력·학력 펼치기, 기준일 9월 18일.
+    - 쓰지 않게 된 예전 홈 토큰 삭제(`--hero-*`, TYPE `hero`·`nav-no`), 공유본의 예전 홈·기업 더보기 팝업 코드 삭제(사용자 승인).
+  - 렌더링 맞춤:
+    - 글꼴 400~800 다섯 굵기 내장, font-display:block, 글꼴을 다 불러온 뒤 첫 그리기(최대 2.5초).
+    - 단추·칩·탭·라벨 줄바꿈 금지.
+    - 좁은 칸(container query): 요약 타일 ≤820px 아이콘·여백·숫자·라벨 축소, ≤600px 아이콘을 위로. 홈 요약 카드 ≤760px 화살표 숨김, ≤640px 2열. 그래프 카드 ≤360px 단추 묶음 여백 축소(공유본).
+  - 확인(8777, 1100·1280·1440px, 다크·라이트): 6화면 넘침 없음(1280px 기업 탐색 기준 단추만 약간 옆 스크롤, 사용자 지시로 건너뜀), 콘솔 오류 없음. 테스트 81개 통과.
+  - 확인 못 한 것: 파일 더블클릭(file://)에서 3D 동작(미리보기 창이 file:// 이동을 막음).
+- Files: components/effects.py, components/home_hero.css, components/home_hero.js, core/theme.py, scripts/build_interactive.py, scripts/interactive/(app.css, charts.js, logic.js, main.js, pages.js, template.html, ui.js), html/v5_수정본_2026-10-02.html
+- Docs updated: design/DESIGN.md(§12.11 Z), html/README.md
+
 ### 2026-10-02 — 23차 수정: 홈 상단바 없앰·간격, 채용 현황 경력·학력 펼치기
 - Type: Design
 - Summary: 요청 Y.

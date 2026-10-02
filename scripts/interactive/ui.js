@@ -63,14 +63,21 @@ U.toggle = (key, label, o = {}) => { const on = !!getv(key);
 U.btn = (label, act, o = {}) => `<button type="button" class="btn btn--${o.kind || "tertiary"}${o.cls ? " " + o.cls : ""}" ${attrs({
   "data-act": act, "data-arg": o.arg, "data-arg2": o.arg2, "data-arg3": o.arg3, disabled: !!o.disabled, title: o.title })}>${o.icon ? `<span class="ico">${o.icon}</span>` : ""}${esc(label)}</button>`;
 U.link = (label, href, o = {}) => (isStr(href) ? `<a class="btn btn--${o.kind || "tertiary"}" href="${esc(href)}" target="_blank" rel="noopener">${esc(label)} <span class="ico">↗</span></a>` : "");
+/** 카드 넘기기(filters.pager, 요청 W2): '전체 N개 중 a~b  ‹ 이전 10개  현재/전체  다음 10개 ›', 끝에서 끝으로 순환 */
 U.pager = (key, total, label = "개", size = 10) => {
   const last = Math.max(0, Math.floor((total - 1) / size));
   const no = Math.min(getv(key) || 0, last); setv(key, no);
   const [s, e] = total ? [no * size + 1, Math.min(total, (no + 1) * size)] : [0, 0];
   return `<div class="pager"><p class="pager__text">전체 ${fmt(total)}${label} 중 ${s}~${e}</p>
-    ${U.btn("이전 10개", "page", { arg: key, arg2: no - 1, disabled: no === 0, icon: "‹" })}
-    ${U.btn("다음 10개", "page", { arg: key, arg2: no + 1, disabled: no >= last, icon: "›" })}</div>`;
+    ${U.btn("이전 10개", "page", { arg: key, arg2: no === 0 ? last : no - 1, disabled: last === 0, icon: "‹" })}
+    <p class="pager__no"><b>${no + 1}</b> / ${last + 1}</p>
+    ${U.btn("다음 10개", "page", { arg: key, arg2: no >= last ? 0 : no + 1, disabled: last === 0, icon: "›", cls: "btn--icon-right" })}</div>`;
 };
+/** 하나만 고르는 단추 묶음(segmented_control, 요청 V2·W1): 둥근 한 덩어리 + 고른 것만 반전 */
+U.seg = (key, options, o = {}) => { const cur = getv(key);
+  return `<div class="seg" role="radiogroup" aria-label="${esc(o.label || "")}">${options.map((v) => { const on = cur === v;
+    return `<button type="button" class="seg__btn${on ? " on" : ""}" role="radio" aria-checked="${on}" ${attrs({ "data-act": o.act || "pill",
+      "data-key": key, "data-val": v, "data-required": "1", "data-reset": o.reset })}>${esc(o.format ? o.format(v) : v)}</button>`; }).join("")}</div>`; };
 U.handoff = (text, act) => `<div class="handoff"><p class="handoff__text">${text}</p>${U.btn("전체로 보기", act, { icon: "✕" })}</div>`;
 U.defenseToggle = () => U.toggle("ui.highlight_defense", "방산 강조", { cls: "pill-tog defense-tog", onLabel: "방산 강조 켜짐",
   help: "방산 관련 근거가 확인된 항목만 진하게 두고 나머지를 흐리게 합니다. 필터나 정렬이 아닙니다." });
@@ -89,9 +96,9 @@ U.tiles = (items, cols = 4) => `<div class="tiles" style="--cols:${cols}">${item
   return t.icon ? `<div class="tile tile--kpi${t.tone === "defense" ? " tile--defense" : ""}" style="animation-delay:${i * 60}ms;--rest:var(--kpi-${t.icon}-rest);--hover:var(--kpi-${t.icon}-${S.ui.motion ? "hover" : "rest"})">
     <span class="tile__ico" aria-hidden="true"></span><div>${text}</div></div>` : `<div class="tile" style="animation-delay:${i * 60}ms">${text}</div>`;
 }).join("")}</div>`;
-U.runCountups = () => {
+U.runCountups = () => {   // data-dec가 있는 것만(홈 요약 카드 = 부품 HH 자체 카운트업)
   if (!S.ui.motion || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  document.querySelectorAll("[data-countup]:not([data-done])").forEach((el) => {
+  document.querySelectorAll("[data-countup][data-dec]:not([data-done])").forEach((el) => {
     el.dataset.done = "1"; const v = +el.dataset.countup, d = +el.dataset.dec, t0 = performance.now(), dur = D.theme.motion.countup_ms;
     const step = (now) => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(v * e, d);
       if (p < 1) requestAnimationFrame(step); };
@@ -151,26 +158,9 @@ U.searchBox = (key, options, placeholder, o = {}) => { const id = "dl-" + key.re
 /** 여러 개 고르는 드롭다운(목록이 위에 떠서 레이아웃이 밀리지 않음, 요청 N11) */
 U.dropdown = (key, options, label, o = {}) => { const sel = getv(key) || [];
   return `<details class="dd" data-open-key="${o.openKey}"${getv(o.openKey) ? " open" : ""}><summary>${esc(sel.length ? sel.join(", ") : label)}</summary>
-    <div class="dd__panel">${U.pills(key, options, { multi: true, reset: o.reset })}</div></details>`; };
+    <div class="dd__panel">${U.pills(key, options, { multi: true, reset: o.reset, act: o.act })}</div></details>`; };
 /** 카드 목록 필터 토글(only_toggle, 요청 L5·N7): tone defense = 빨강, drone = 초록 */
 U.onlyToggle = (key, label, tone, help) => U.toggle(key, label, { cls: `pill-tog ${tone === "defense" ? "defense-tog" : "goal-tog"}`, help });
 function workplacesSummary(j, n = 3) { const w = j.workplaces || [];
   return w.slice(0, n).join(" · ") + (w.length > n ? ` 외 ${w.length - n}` : ""); }
 function dstr(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
-
-/* ---------------- 홈 드론 (effects.py drone_hero): 클릭 → P1~P5, 닫히면 크게 ---------------- */
-U.DRONE_SVG = `<svg class="drone" viewBox="0 0 320 200" aria-hidden="true"><g class="body">
-  <line x1="160" y1="100" x2="62" y2="58" class="arm"/><line x1="160" y1="100" x2="258" y2="58" class="arm"/>
-  <line x1="160" y1="100" x2="62" y2="142" class="arm"/><line x1="160" y1="100" x2="258" y2="142" class="arm"/>
-  <rect x="128" y="82" width="64" height="36" rx="12" class="hull"/><circle cx="160" cy="100" r="7" class="lens"/>
-  <rect x="146" y="118" width="28" height="12" rx="4" class="gimbal"/>
-  <g class="rotor" style="transform-origin:62px 58px"><ellipse cx="62" cy="58" rx="40" ry="6" class="prop"/></g>
-  <g class="rotor r2" style="transform-origin:258px 58px"><ellipse cx="258" cy="58" rx="40" ry="6" class="prop"/></g>
-  <g class="rotor r2" style="transform-origin:62px 142px"><ellipse cx="62" cy="142" rx="40" ry="6" class="prop"/></g>
-  <g class="rotor" style="transform-origin:258px 142px"><ellipse cx="258" cy="142" rx="40" ry="6" class="prop"/></g>
-  <circle cx="62" cy="58" r="5" class="hub"/><circle cx="258" cy="58" r="5" class="hub"/><circle cx="62" cy="142" r="5" class="hub"/><circle cx="258" cy="142" r="5" class="hub"/></g></svg>`;
-U.hero = (entries) => { const open = S.ui.home_menu_open, move = S.ui.motion;
-  return `<div class="hero${open ? " open" : ""}${move ? " move" : ""}"><span class="ring"></span><span class="ring b"></span>
-    <button class="core" type="button" data-act="hero" aria-expanded="${open}" aria-label="${open ? "탐색 메뉴 접기" : "탐색 메뉴 열기"}">${U.DRONE_SVG}</button>
-    <div class="menu">${entries.map((e, i) => `<button type="button" class="go p${i + 1}" data-act="hero-go" data-arg="${e.key}" tabindex="${open ? 0 : -1}"><b>${esc(e.label)}</b><span>${esc(e.desc)}</span></button>`).join("")}</div>
-    <button class="hero-toggle" type="button" data-act="motion">${move ? "움직임 멈추기" : "움직임 재생"}</button></div>`; };

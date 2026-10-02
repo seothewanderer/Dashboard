@@ -3,33 +3,50 @@
 
 const PG = {};
 
-/* ================= 홈 (views/home.py) ================= */
+/* ================= 홈 (views/home.py, 요청 P·Q·R·Y) ================= */
+// 패널 순서 = 드론 둘레 오각형 자리. 아이콘 = 사이드바 아이콘 첫 프레임 + 01 KPI 건물(정적)
 const ENTRIES = [
-  { key: "industry", label: "P1 산업 이해", desc: "활용 분야와 산업 규모 살펴보기" },
-  { key: "jobs", label: "P2 직무 탐색", desc: "하는 일과 필요한 기술 알아보기" },
-  { key: "learning", label: "P3 준비 역량", desc: "배울 기술과 교육 찾아보기" },
-  { key: "recruit.postings", label: "P4 채용 공고", desc: "직무·지역별 공고 조건 확인하기" },
-  { key: "recruit.companies", label: "P5 기업 탐색", desc: "관심 분야의 기업과 사업 알아보기" },
+  { key: "industry", label: "산업 이해", desc: "활용 분야와 산업 규모 살펴보기", icon: "var(--nav-icon-industry-rest)" },
+  { key: "jobs", label: "직무 탐색", desc: "하는 일과 필요한 기술 알아보기", icon: "var(--nav-icon-jobs-rest)" },
+  { key: "learning", label: "준비 역량", desc: "배울 기술과 교육 찾아보기", icon: "var(--nav-icon-learning-rest)" },
+  { key: "recruit.postings", label: "채용 공고", desc: "직무·지역별 공고 조건 확인하기", icon: "var(--nav-icon-recruit-rest)" },
+  { key: "recruit.companies", label: "기업 탐색", desc: "관심 분야의 기업과 사업 알아보기", icon: "var(--kpi-company-rest)" },
 ];
+const goKey = (key) => { const [page, sub] = key.split("."); go(page, sub || null); };
 PG.home = () => {
-  const latest = D.industrySize[D.industrySize.length - 1];
-  const tiles = U.tiles([
-    { label: "산업의 범위 · 전국 통계", value: latest.company_total, unit: "개 업체", sub: `${latest.reference_year}년 종사자 ${fmt(latest.employees_total)}명` },
-    { label: "살펴볼 직무 · 사전", value: D.jobs.length, unit: "개 직무", sub: `직무–기술 관계 ${fmt(D.overview.relations)}개 · 현재 채용 직업 수 아님` },
-    { label: "찾아볼 학습 기회 · 고용24", value: D.courses.length, unit: "개 과정", sub: `회차 ${fmt(D.overview.offerings)}개 · 모집 상태 미확인` },
-    { label: "확인할 공고 · 수집 표본", value: D.postings.length, unit: "건 공고", sub: `탐색 조직 ${fmt(D.overview.org)}개(DART 보강 ${D.overview.dart}개) · 서로 더하지 않음` },
-  ], 4);
-  const go = (label, page, sub) => U.btn(label, "go", { kind: "secondary", arg: page, arg2: sub, icon: "→", cls: "btn--wide" });
+  // 방문마다 한 번: 첫 방문 = 진입 비행(2시 방향), 다른 화면에서 오면 = 마지막에 누른 패널 방향에서 복귀(views/home._entry)
+  if (S._arrived) {
+    S.homeVisit = (S.homeVisit || 0) + 1;
+    S.homeEntry = { visit: S.homeVisit, kind: S.homeVisit === 1 ? "first" : "return", panel: S.homeReturn ?? null };
+    S.homeReturn = null;
+    delete CH.hosts.hh;                                   // 홈에 들어올 때마다 새 무대(앱에서 부품이 새로 붙는 것과 같게)
+  }
+  const kicon = (n) => ({ rest: `var(--kpi-${n}-rest)`, hover: `var(--kpi-${n}-hover)` });
+  const kpis = [
+    { label: "직무 탐색", value: D.jobs.length, unit: "개 직무", key: "jobs", icon: kicon("job"),
+      sub: `직무 사전 · 직무–기술 관계 ${fmt(D.overview.relations)}개 · 현재 채용 직업 수 아님` },
+    { label: "학습 기회", value: D.courses.length, unit: "개 과정", key: "learning", icon: kicon("learning"),
+      sub: `고용24 훈련과정 · 회차 ${fmt(D.overview.offerings)}개 · 모집 상태 미확인` },
+    { label: "수집 공고", value: D.postings.length, unit: "건 공고", key: "recruit.postings", icon: kicon("posting"),
+      sub: `${C_.postings_as_of} 기준 채용 중이던 공고` },
+    { label: "관련 기업", value: D.overview.org, unit: "개 기업", key: "recruit.companies", icon: kicon("company"),
+      sub: `기업·기관 · DART 보강 ${D.overview.dart}개` },
+  ];
+  CH.mountComp("hh", HH, { entries: ENTRIES, kpis, open: S.ui.home_menu_open, motion: S.ui.motion, entry: S.homeEntry, vendor: "",
+    countup_ms: D.theme.motion.countup_ms },
+    (name, value) => {
+      if (name === "go") { S.homeReturn = ENTRIES.findIndex((e) => e.key === value); S.ui.home_menu_open = false; goKey(value); }
+      else if (name === "kpi") goKey(value);                // 요약 카드: 비행 없이 바로(돌아올 때는 2시 방향)
+    },
+    (name, value) => { if (name === "open") S.ui.home_menu_open = !!value; else if (name === "motion") S.ui.motion = !!value; save(); });
   return `<header class="home-hero"><h1 class="home-hero__title">${esc(C_.home_title)}</h1><p class="home-hero__subtitle">${esc(C_.home_subtitle)}</p></header>
-    ${U.hero(ENTRIES)}
-    <details class="expander"><summary>탐색 메뉴를 버튼으로 열기</summary><div class="expander__body row-wrap">
-      ${ENTRIES.map((e) => U.btn(e.label, "hero-go", { kind: "secondary", arg: e.key, title: e.desc })).join("")}</div></details>
-    ${U.section("이 대시보드에서 볼 수 있는 것")}${tiles}
-    <div class="cols4">${go("산업 보기", "industry")}${go("직무 보기", "jobs")}${go("교육 보기", "learning")}<div class="stack">${go("공고 보기", "recruit", "postings")}${go("기업 보기", "recruit", "companies")}</div></div>
-    ${U.caption(`산업 매출 ${fmt(latest.revenue_total_100m_krw, 2)}억원(${latest.reference_year}년, 세부표 합계). 전국 산업 통계와 수집 표본은 서로 다른 자료입니다.`)}
-    ${U.section("이렇게 이용해 보세요", "guide")}
-    <div class="cols3">${C_.steps.map(([no, t, b]) => `<div class="guide-step"><span class="guide-step__no">${esc(no)}</span><p class="guide-step__title">${esc(t)}</p><p class="guide-step__body">${esc(b)}</p></div>`).join("")}</div>
-    ${C_.faq.map(([q, a]) => `<details class="expander"><summary>${esc(q)}</summary><div class="expander__body"><p>${esc(a)}</p></div></details>`).join("")}`;
+    <div data-comp="hh"></div>
+    <section class="hm-guide"><h2 class="section-title" id="guide">이렇게 이용해 보세요</h2><ol class="hm-guide__steps">
+      ${C_.steps.map(([no, t, b]) => `<li class="hm-guide__step"><span class="hm-guide__no">${esc(no)}</span><p class="hm-guide__title">${esc(t)}</p><p class="hm-guide__body">${esc(b)}</p></li>`).join("")}
+    </ol><p class="hm-guide__note">${esc(C_.steps_note)}</p></section>
+    <h2 class="section-title hm-faq-title">자주 묻는 질문</h2>
+    ${C_.faq.map(([q, a]) => `<details class="expander"><summary>${esc(q)}</summary><div class="expander__body"><p>${esc(a)}</p></div></details>`).join("")}
+    <p class="hm-note">각 수치는 서로 다른 수집 자료(직무 사전 · 고용24 · 채용 공고 수집 표본)이며 서로 더하지 않습니다. 채용 공고는 ${esc(C_.postings_as_of)} 기준입니다.</p>`;
 };
 
 /* ================= 01 산업 이해 (views/p01_industry.py) ================= */
@@ -50,20 +67,21 @@ PG.industry = () => {
     ${U.caption("조사 표본이 해마다 달라 연도 차이를 성장률로 해석하지 않습니다.")}`;
   h += "</div></details>";
 
-  // I02 분야 — 방산 근거 기업 겹침(요청 H2), 접힌 상태 미리보기 흐림 + 더보기 단추(요청 H3·I3)
+  // I02 분야 — 방산 관련 기업 겹침(요청 H2·V1), 접힌 상태 미리보기 흐림 + 더보기 단추(요청 H3·I3), 숨은 분야를 고르면 자동 펼침(T2)
   const f = { area: [], defense_group: [], has_posting: false, keyword: "" };
   const counts = L.areaCounts(D.companies, f), TOP = 8, PREVIEW = 2;
+  PG._indHidden = counts.slice(TOP + PREVIEW - 1).map((r) => r.key);
   let view = st.all ? counts : counts.slice(0, TOP + PREVIEW);
   if (st.area && !view.some((r) => r.key === st.area)) view = view.concat(counts.filter((r) => r.key === st.area));
   const def = (k) => D.areaDefense[k] || 0;
   const [opt, ht] = CH.overlayHbar(view.map((r) => r.key), view.map((r) => r.n), view.map((r) => def(r.key)),
-    { totalName: "전체 기업·기관", partName: "방산 근거 기업·기관", unit: "개", selected: st.area ? [st.area] : [], note: "분야 간 중복 포함" });
+    { totalName: "전체 기업·기관", partName: "방산 관련 기업·기관", unit: "개", selected: st.area ? [st.area] : [], note: "분야 간 중복 포함" });
   const fade = !st.all && counts.length > TOP;
-  h += U.chartCard({ meta: "I02", subtitle: "분야를 누르면 그 분야의 일과 기업으로 이어집니다 · 빨강 = 그중 방산 근거 기업·기관", n: D.companies.length,
-    table: [["분야", "기업·기관 수", "그중 방산 근거"], counts.map((r) => [r.key, r.n, def(r.key)])] },
-    `<div class="${fade ? "fade" : ""}">${CH.place("i02_bar", opt, ht, (name) => { st.area = st.area === name ? null : name; })}</div>
+  h += U.chartCard({ meta: "I02", subtitle: "분야를 누르면 그 분야의 일과 기업으로 이어집니다 · 빨강 = 그중 방산 관련 기업·기관", n: D.companies.length,
+    table: [["분야", "기업·기관 수", "그중 방산 관련"], counts.map((r) => [r.key, r.n, def(r.key)])] },
+    `<div class="${fade ? "fade" : ""}">${CH.place("i02_bar", opt, ht, (name) => { st.area = st.area === name ? null : name; indReveal(); })}</div>
     <div class="more-row">${U.btn(st.all ? "접기" : `분야 더보기 (전체 ${counts.length}개)`, "ind-more", { kind: "secondary", icon: st.all ? "⌃" : "⌄" })}</div>`
-    + U.pills("industry.area", counts.map((r) => r.key), { label: "분야 선택" }));
+    + U.pills("industry.area", counts.map((r) => r.key), { label: "분야 선택", act: "ind-area" }));
   if (st.area) {
     const sel = st.area, rel = D.businessAreaDefense.find((r) => r.business_category === sel);
     const jobsHere = D.applicationBridge.filter((r) => r.application_id === sel && r.review_status !== "rejected");
@@ -127,7 +145,7 @@ PG.jobs = () => {
   // 직무·기술 검색 = 검색 상자(요청 O2·O4), 근거 유형 필터 삭제(O3)
   h += `<div class="filter-row"><label class="field"><span class="field__label">직무·기술 검색</span>
       ${U.searchBox("jobs.text", [...D.jobs.map((j) => j.job_title_ko), ...D.jobs.flatMap((j) => j.skills)], "예: 자율비행, GIS, CAD · 입력하거나 펼쳐서 찾기", { act: "jobs-search" })}</label>
-    <div class="field"><span class="field__label">하는 일</span>${U.pills("jobs.acts", C_.activities, { multi: true, reset: "jobs.page", label: "하는 일" })}</div></div>`;
+    <div class="field"><span class="field__label">하는 일</span>${U.pills("jobs.acts", C_.activities, { multi: true, reset: "jobs.page", label: "하는 일", act: "jobs-acts" })}</div></div>`;
   const base = L.filterJobs(D.jobs, { activities: st.acts, text: st.text, jobIds: st.handoff ? st.handoff.job_ids : null });
   const middle = st.major ? st.middle : null, hl = S.ui.highlight_defense;
   const tableRows = {}; base.forEach((j) => { const k = j.major_category + "|" + j.middle_category; tableRows[k] = (tableRows[k] || 0) + 1; });
@@ -180,6 +198,7 @@ PG.jobs = () => {
     if (kind === "M") { st.major = st.major === value ? null : value; st.middle = null; st.page = 0; }
     else if (kind === "D") { const j = D.jobs.find((x) => x.middle_category === value); if (!j) return;
       const same = st.middle === value; Object.assign(st, { major: j.major_category, middle: same ? null : value, page: 0 }); }
+    if ((kind === "M" || kind === "D") && (st.major || st.middle)) st.cards_open = true;   // 고르면 직무 카드 펼침(요청 X3)
     else if (kind === "J") S.dialog = { kind: "job", id: value };
     else if (kind === "R") Object.assign(st, { major: null, middle: null, page: 0 });
   }
@@ -273,7 +292,7 @@ PG.learning = () => {
   const sub = D.postingKw.filter((k) => k.keyword_category_name === st.s03).sort((a, b) => b.posting_count - a.posting_count).slice(0, 12);
   const [o1, h1] = CH.hbar(sub.map((k) => k.keyword_normalized), sub.map((k) => k.posting_count), { unit: "건 공고", selected: edu ? [] : st.rkws });
   if (!edu) h += `<details class="expander"><summary>수집 공고에서 언급된 기술 보기 (전체 공고 기준)</summary><div class="expander__body">
-    ${U.pills("learning.s03", cats, { required: true, label: "분류" })}
+    ${U.seg("learning.s03", cats, { label: "분류" })}
     ${U.chartCard({ meta: "S03", table: [["키워드", "공고 수", "비율(%)"], sub.map((k) => [k.keyword_normalized, k.posting_count, k.posting_share_pct])] },
       CH.place("s03_bar", o1, h1, (name) => { if (name in recN) { st.no_course = null; learnToggle(st, LEARN_REC, name); } else st.no_course = name; }))}
     ${st.no_course && sub.some((k) => k.keyword_normalized === st.no_course) ? U.info(`'${esc(st.no_course)}'과(와) 이름이 일치하는 교육 과정이 없습니다.`) : ""}
@@ -295,7 +314,7 @@ PG.learning = () => {
         h += U.goalStatus(ranked.filter((r) => r.goal_reason).length, ranked.length); }
       const groups = L.LEARN_GROUPS.filter((g) => ranked.some((r) => r.group === g));
       if (!groups.includes(st.group)) st.group = groups[0];
-      if (groups.length > 1) h += U.pills("learning.group", groups, { required: true, reset: "learning.page", format: (g) => `${g} ${ranked.filter((r) => r.group === g).length}` });
+      if (groups.length > 1) h += U.seg("learning.group", groups, { reset: "learning.page", label: "후보 그룹", format: (g) => `${g} ${ranked.filter((r) => r.group === g).length}` });
       const inGroup = ranked.filter((r) => r.group === st.group);
       if (st.group === L.GROUP_SEARCH) h += U.caption("검색어·과정명이 일치하는 후보 · 교육 내용 확인 필요");
       h += U.pager("learning.page", inGroup.length, "개 과정") + U.grid(L.paginate(inGroup, st.page)[0], U.courseCard);
@@ -327,10 +346,10 @@ PG.recruit = () => {
 
 /* ----- 채용 현황 (views/recruit/postings.py) ----- */
 const KEYS = { job_major_category: "job", province_name: "region", career_type: "career", education_normalized: "edu" };
-const COLLECTED = "2026년 9월 14일";   // 공고 수집일(원본에 날짜 열 없음, 사용자 확인)
+const COLLECTED = C_.postings_as_of;   // 공고 기준일(content/module_meta.POSTINGS_AS_OF, 홈·FAQ와 같은 값)
 PG.postings = () => {
   const st = P("postings", { job: [], region: [], career: [], edu: [], page: 0, company: null, def_only: false, ratio: false,
-    cards_open: false, region_dd: false, mx_open: false });
+    cards_open: false, region_dd: false, mx_open: false, cond_open: false });
   const ho = consumeHandoff("recruit.postings");
   if (ho && ho.company_id) { st.company = ho.company_id; st.page = 0; }
   const pf = D.postings, comp = st.company ? [st.company] : null;
@@ -346,16 +365,17 @@ PG.postings = () => {
   // 공고 조건으로 거르기(요청 N10·N12): 한 줄, 그래프·지도와 같은 필터 상태
   const present = (dim, order) => order.filter((v) => pf.some((p) => p[dim] === v));
   h += `<div class="mycond"><p class="filter-label">공고 조건으로 거르기 · 아래 그래프를 눌러도 같이 바뀝니다</p><div class="mycond__row mycond__row--one">
-    <div class="mc"><span class="mc-label">학력</span>${U.pills("postings.edu", present("education_normalized", L.EDUCATION_ORDER), { multi: true, reset: "postings.page" })}</div>
-    <div class="mc"><span class="mc-label">경력</span>${U.pills("postings.career", present("career_type", L.CAREER_ORDER), { multi: true, reset: "postings.page" })}</div>
-    <div class="mc"><span class="mc-label">지역</span>${U.dropdown("postings.region", uniq(pf.map((p) => p.province_name)).sort(cmp), "전체 지역 · 눌러서 선택", { openKey: "postings.region_dd", reset: "postings.page" })}</div>
+    <div class="mc"><span class="mc-label">학력</span>${U.pills("postings.edu", present("education_normalized", L.EDUCATION_ORDER), { multi: true, reset: "postings.page", act: "post-pill" })}</div>
+    <div class="mc"><span class="mc-label">경력</span>${U.pills("postings.career", present("career_type", L.CAREER_ORDER), { multi: true, reset: "postings.page", act: "post-pill" })}</div>
+    <div class="mc"><span class="mc-label">지역</span>${U.dropdown("postings.region", uniq(pf.map((p) => p.province_name)).sort(cmp), "전체 지역 · 눌러서 선택", { openKey: "postings.region_dd", reset: "postings.page", act: "post-pill" })}</div>
     <div class="mc mc--right">${U.onlyToggle("postings.def_only", "방산 관련 기업만 보기", "defense", "켜면 아래 그래프와 공고 카드가 모두 방산 관련 기업의 공고만 보여 줍니다.")}</div></div></div>`;
   const mine = st.def_only ? pf.filter((p) => L.isDefense(p.defense_group)) : pf;
   const filters = Object.fromEntries(Object.entries(KEYS).map(([dim, key]) => [dim, st[key]]));
   const scoped = L.filterPostings(mine, {}, comp), result = L.filterPostings(mine, filters, comp);
   const anyF = Object.values(filters).some((v) => v.length);
   h += `<div class="filterbar"><p class="result-count">조건에 맞는 공고 <b>${result.length}</b>건</p>${anyF ? U.btn("필터 모두 해제", "post-clear", { icon: "✕" }) : ""}</div>`;
-  const togF = (key) => (name) => { const a = st[key]; st[key] = a.includes(name) ? a.filter((x) => x !== name) : [...a, name]; st.page = 0; };
+  const togF = (key) => (name) => { const a = st[key]; st[key] = a.includes(name) ? a.filter((x) => x !== name) : [...a, name]; st.page = 0;
+    if (st[key].length) st.cards_open = true; };   // 그래프·지도로 고르면 공고 카드 펼침(요청 X3)
 
   // 직무 막대(왼쪽) + 지역 지도(오른쪽) 연동(요청 N5·N10): 앱 부품 JS(LCM) 그대로
   const fBase = { ...filters }; delete fBase.job_major_category; delete fBase.province_name;
@@ -388,9 +408,12 @@ PG.postings = () => {
     (name, value) => { if (name === "region") togF("region")(value); else togF("job")(value); });
 
   const bar = (dim, key, title, ord) => { const cc = L.dimCounts(scoped, dim, filters, ord);
-    const [o, hh] = CH.hbar(cc.map((r) => r.key), cc.map((r) => r.n), { selected: st[key], unit: "건" });
+    const [o, hh] = CH.hbar(cc.map((r) => r.key), cc.map((r) => r.n), { selected: st[key], unit: "건", thin: true });
     return U.chartCard({ meta: "H02", title, n: scoped.length, table: [["구분", "공고 수"], cc.map((r) => [r.key, r.n])] }, CH.place(`h_${key}`, o, hh, togF(key))); };
-  h += `<div class="cols2 equal">${bar("career_type", "career", "경력 조건", L.CAREER_ORDER)}${bar("education_normalized", "edu", "학력 조건", L.EDUCATION_ORDER)}</div>`;
+  // 경력·학력 조건 = 펼치기(요청 Y3, 기본 닫힘), 얇고 촘촘한 막대
+  h += `<details class="expander" data-open-key="postings.cond_open"${st.cond_open ? " open" : ""}><summary>경력·학력 조건 보기</summary><div class="expander__body">`;
+  if (st.cond_open) h += `<div class="cols2 equal">${bar("career_type", "career", "경력 조건", L.CAREER_ORDER)}${bar("education_normalized", "edu", "학력 조건", L.EDUCATION_ORDER)}</div>`;
+  h += "</div></details>";
 
   const m = L.jobCareerMatrix(result), et = L.employmentTagCounts(result);
   h += `<details class="expander" data-open-key="postings.mx_open"${st.mx_open ? " open" : ""}><summary>직무 × 경력 / 고용형태 보기</summary><div class="expander__body">`;
@@ -425,68 +448,100 @@ PG.postings = () => {
   return h;
 };
 
-/* ----- 기업 탐색 (views/recruit/companies.py) ----- */
+/* ----- 기업 탐색 (views/recruit/companies.py, 요청 S·T·U·V·W·X) ----- */
+const CO_BASIS_META = { companies: "C01", posted: "C01P", postings: "C01N" };
 PG.companies = () => {
-  const st = P("companies", { area: [], group: [], posted: false, kw: "", multi: false, all: false, sort: "auto", ids: null, more: 1, cards_open: false, def_only: false });
+  const st = P("companies", { area: [], posted: false, kw: "", multi: false, all: false, sort: "auto", ids: null, cards_open: false,
+    def_only: false, basis: "companies", page: 0 });
   const ho = consumeHandoff("recruit.companies");
-  if (ho) { if (ho.area) { st.multi = ho.area.length > 1; st.area = ho.area; } st.ids = ho.company_ids || null; }
+  if (ho) { if (ho.area) { st.multi = ho.area.length > 1; st.area = ho.area; } st.ids = ho.company_ids || null; st.cards_open = true; }
   const base = st.ids ? D.companies.filter((co) => st.ids.includes(co.company_id)) : D.companies;
   let h = st.ids ? U.handoff(`'${esc(D.companyById[st.ids[0]].company_name_normalized)}' 기업에서 이동해 왔습니다`, "co-clear-ids") : "";
-  const f = { area: st.area, defense_group: st.group, has_posting: st.posted, keyword: st.kw || "" };
+  const f = { area: st.area, has_posting: st.posted, keyword: st.kw || "" };
   h += `<div class="filterbar"><label class="field"><span class="field__label">키워드</span>
-      ${U.searchBox("companies.kw", [...D.companies.map((co) => co.company_name_normalized), ...D.companies.flatMap((co) => co.areas), ...D.companies.flatMap((co) => L.splitTags(co.drone_subfields))], "예: 방제, 매핑, 안티드론 · 입력하거나 펼쳐서 찾기")}</label>
+      ${U.searchBox("companies.kw", [...D.companies.map((co) => co.company_name_normalized), ...D.companies.flatMap((co) => co.areas), ...D.companies.flatMap((co) => L.splitTags(co.drone_subfields))], "예: 방제, 매핑, 안티드론 · 입력하거나 펼쳐서 찾기", { act: "co-kw" })}</label>
     ${U.toggle("companies.posted", "수집 공고 연결됨", { help: "검토 전 연결 후보를 포함합니다." })}
     ${U.toggle("companies.multi", "여러 분야 선택", { act: "co-multi", help: "같은 분류 안에서는 '하나 이상'으로 합칩니다." })}
     ${U.defenseToggle()}${U.goalToggle()}</div>${U.defenseStatus()}`;
-  const counts = L.areaCounts(base, f);
-  let view = st.all ? counts : counts.slice(0, 8);
-  view = view.concat(counts.filter((r) => f.area.includes(r.key) && !view.includes(r)));
-  const [o1, h1] = CH.hbar(view.map((r) => r.key), view.map((r) => r.n), { selected: f.area, unit: "개 기업·기관", note: "분야 간 중복 포함" });
-  const gc = L.groupCounts(base, f);
-  const [o2, h2] = CH.hbar(gc.map((r) => r.key), gc.map((r) => r.n), { selected: f.defense_group, unit: "개",
-    tiers: gc.map((r) => L.TIER[r.key] || null), highlight: S.ui.highlight_defense });
-  const togArea = (name) => { st.area = st.multi ? (st.area.includes(name) ? st.area.filter((x) => x !== name) : [...st.area, name])
-    : (st.area[0] === name ? [] : [name]); };
-  h += `<div class="cols32"><div>${U.chartCard({ meta: "C01", title: "분야별 기업·기관", subtitle: "다른 조건 적용 · 분야 선택 전 분포", n: base.length,
-      table: [["분야", "기업·기관 수"], counts.map((r) => [r.key, r.n])] },
-      CH.place("c01_area", o1, h1, togArea) + U.toggle("companies.all", `분야 더보기 (전체 ${counts.length}개)`)
-      + U.pills("companies.area", counts.map((r) => r.key), { multi: true, act: "co-area" }))}</div>
-    <div>${U.chartCard({ meta: "C01G", title: "방산 근거 집단", n: base.length, subtitle: "직접확인은 수집 자료 범위의 확인이며 공식 지정과 다릅니다",
-      table: [["집단", "기업·기관 수"], gc.map((r) => [r.key, r.n])] },
-      CH.place("c01_group", o2, h2, (name) => { st.group = st.group.includes(name) ? st.group.filter((x) => x !== name) : [...st.group, name]; })
-      + U.pills("companies.group", L.GROUP_ORDER, { multi: true }))}</div></div>`;
 
+  // C01 분야 막대: 기준 전환(U1) + 그중 방산 관련(T1) + 흐림 더보기(S1) + 숨은 분야 자동 펼침(T2) + 함께 하는 분야(U2)
+  const counts = L.areaBasisCounts(base, f, st.basis), TOP = 8, PREVIEW = 2;
+  PG._coHidden = counts.slice(TOP + PREVIEW - 1).map((r) => r.key);
+  let view = st.all ? counts : counts.slice(0, TOP + PREVIEW);
+  view = view.concat(counts.filter((r) => f.area.includes(r.key) && !view.includes(r)));
+  const unit = st.basis === "postings" ? "건" : "개", bname = L.BASES[st.basis];
+  const [o1, h1] = CH.overlayHbar(view.map((r) => r.key), view.map((r) => r.n), view.map((r) => r.defense),
+    { totalName: bname, partName: "그중 방산 관련", unit, selected: f.area, note: "분야 간 중복 포함" });
+  const fade = !st.all && counts.length > TOP;
+  let left = U.seg("companies.basis", Object.keys(L.BASES), { format: (k) => L.BASES[k], label: "기준", reset: "companies.page" })
+    + `<div class="${fade ? "fade" : ""}">${CH.place(`c01_area_${st.basis}`, o1, h1, (name) => coPickArea(name))}</div>
+    <div class="more-row">${U.btn(st.all ? "접기" : `분야 더보기 (전체 ${counts.length}개)`, "co-more-areas", { kind: "secondary", icon: st.all ? "⌃" : "⌄" })}</div>`
+    + U.pills("companies.area", counts.map((r) => r.key), { multi: true, act: "co-area" });
+  if (f.area.length) {                                    // 함께 하는 분야: 채용 기준이면 공고가 연결된 기업만
+    const co = L.areaCooccurrence(base, { ...f, has_posting: f.has_posting || st.basis !== "companies" }, f.area).slice(0, 8);
+    left += `<p class="chart-card__subhead">'${esc(f.area.join(" · "))}' 기업들이 함께 하는 분야</p>`;
+    if (co.length) { const [oc, hc] = CH.overlayHbar(co.map((r) => r.key), co.map((r) => r.n), co.map((r) => r.defense),
+        { totalName: "이 분야도 하는 곳", partName: "그중 방산 관련", unit: "개", note: "막대를 누르면 그 분야로 바꿔 봅니다" });
+      left += CH.place("c01_cooc", oc, hc, (name) => { coPickArea(name); st.all = true; })
+        + U.caption(`고른 분야 ${st.basis !== "companies" ? "채용 기업·기관" : "기업·기관"} 중 각 분야도 하는 곳의 수(고유, 상위 8개). 분야 외 조건 적용.`); }
+    else left += U.caption("고른 분야 기업들이 함께 하는 다른 분야가 없습니다.");
+  }
+  const c01 = U.chartCard({ meta: CO_BASIS_META[st.basis], title: "분야별 기업·기관", n: base.length,
+    subtitle: `기준: ${bname} · 다른 조건 적용 · 빨강 = 그중 방산 관련 기업`,
+    table: [["분야", bname, "그중 방산 관련"], counts.map((r) => [r.key, r.n, r.defense])] }, left);
+
+  // C04 채용 공고 노출: 방산 강조 꺼짐 = 전체 상위 10(방산 빨강), 켜짐 = 방산 관련 기업만(요청 S3)
   let result = L.filterCompanies(base, f);
-  const dfn = result.filter((co) => L.isDefense(co.defense_group));
-  if (dfn.length) {
-    const exposed = dfn.filter((co) => co.posting_count > 0).sort((a, b) => b.posting_count - a.posting_count || cmp(a.company_name_normalized, b.company_name_normalized));
+  const cols = ["기업·기관", "근거 집단", "연결 공고 수"], row = (co) => [co.company_name_normalized, co.defense_group, co.posting_count];
+  const byPost = (a, b) => b.posting_count - a.posting_count || cmp(a.company_name_normalized, b.company_name_normalized);
+  let c04;
+  if (S.ui.highlight_defense) {
+    const dfn = result.filter((co) => L.isDefense(co.defense_group)), exposed = dfn.filter((co) => co.posting_count > 0).sort(byPost);
     const silent = dfn.filter((co) => co.posting_count === 0).map((co) => co.company_name_normalized).sort(cmp);
     let b = "";
     if (exposed.length) { const [o, hh] = CH.hbar(exposed.map((co) => co.company_name_normalized), exposed.map((co) => co.posting_count),
       { unit: "건", tiers: exposed.map((co) => L.TIER[co.defense_group]) }); b += CH.place("c04_bar", o, hh); }
+    else b += U.caption("조건에 맞는 방산 관련 기업 중 수집 공고가 연결된 곳이 없습니다.");
     if (silent.length) b += U.caption(`수집 공고 0건 ${silent.length}곳: ${esc(silent.slice(0, 8).join(", "))}${silent.length > 8 ? " 외" : ""} · 수집 시점에 공고가 확인되지 않았다는 뜻이며 채용이 없다는 뜻은 아닙니다.`);
-    h += U.chartCard({ meta: "C04", n: dfn.length, subtitle: `방산 관련 기업 ${dfn.length}곳 중 수집 공고가 연결된 곳 ${exposed.length}곳`,
-      table: [["기업·기관", "근거 집단", "연결 공고 수"], dfn.map((co) => [co.company_name_normalized, co.defense_group, co.posting_count])] }, b);
+    c04 = U.chartCard({ meta: "C04", n: dfn.length, subtitle: `방산 관련 기업 ${dfn.length}곳 중 수집 공고가 연결된 곳 ${exposed.length}곳 · '방산 강조'를 끄면 전체 기업`,
+      table: [cols, dfn.map(row)] }, b);
+  } else {
+    const exposed = result.filter((co) => co.posting_count > 0).sort(byPost), top = exposed.slice(0, 10);
+    const nDef = exposed.filter((co) => L.isDefense(co.defense_group)).length;
+    let b = "";
+    if (top.length) { const [o, hh] = CH.hbar(top.map((co) => co.company_name_normalized), top.map((co) => co.posting_count),
+      { unit: "건", tiers: top.map((co) => L.TIER[co.defense_group] || null) }); b += CH.place("c04_bar_all", o, hh); }
+    else b += U.caption("조건에 맞는 기업·기관 중 수집 공고가 연결된 곳이 없습니다.");
+    c04 = U.chartCard({ meta: "C04A", n: exposed.length,
+      subtitle: `수집 공고가 연결된 기업·기관 ${exposed.length}곳 중 많은 순 ${top.length}곳 · 빨강 = 방산 관련(${nDef}곳) · '방산 강조'를 켜면 방산 관련 기업만`,
+      table: [cols, exposed.map(row)] }, b);
   }
-  // 기업 카드 펼치기(요청 L5) + 방산 관련만 보기
+  h += `<div class="cols2 equal">${c01}${c04}</div>`;
+
+  // 기업 카드 펼치기: 기본 닫힘, 그래프·칩·키워드로 고르면 펼침(요청 X3). '방산 관련만 보기' + 정렬 한 줄(X1), 넘기기(W2)
   if (st.def_only) result = result.filter((co) => L.isDefense(co.defense_group));
-  h += `<details class="expander" data-open-key="companies.cards_open"${st.cards_open ? " open" : ""}><summary>기업 카드 보기 · ${result.length}개</summary><div class="expander__body">`;
+  h += `<details class="expander" id="co-cards" data-open-key="companies.cards_open"${st.cards_open ? " open" : ""}><summary>기업 카드 보기 · ${fmt(result.length)}개</summary><div class="expander__body">`;
   if (st.cards_open) {
-    h += `<div class="row-wrap">${U.onlyToggle("companies.def_only", "방산 관련만 보기", "defense", "방산 근거가 있는 기업·기관 카드만 봅니다. 위 그래프는 그대로입니다.")}</div>
-      <div class="field"><span class="field__label">정렬</span>${U.pills("companies.sort", ["auto", "name"], { required: true,
-      format: (v) => ({ auto: "자동(방산 근거 우선)", name: "이름순" }[v]) })}</div>`;
+    h += `<div class="row-wrap">${U.onlyToggle("companies.def_only", "방산 관련만 보기", "defense", "방산 관련 기업·기관 카드만 봅니다. 위 그래프는 그대로입니다.")}
+      ${U.seg("companies.sort", ["auto", "name"], { format: (v) => ({ auto: "자동(방산 관련 우선)", name: "이름순" }[v]), label: "정렬", reset: "companies.page" })}</div>`;
     let ranked = L.sortCompanies(result, f, st.sort);
     if (U.goalOn()) { ranked = ranked.map((co) => ({ ...co, goal_reason: L.companyGoalReason(co, S.plan.goal_job_id) }));
       h += U.goalStatus(ranked.filter((co) => co.goal_reason).length, ranked.length); }
-    PG._companyRanked = ranked;
-    const first = ranked.slice(0, 10);
     const note = L.isSortedByDefense(f, st.sort) ? " · 선택 결과 안에서 원문 직접확인 → 교차출처 → 인접 후보 → 미확인 순, 우수성·채용 순위 아님" : " · 이름순";
-    h += `<p class="result-count">조건에 맞는 기업·기관 <b>${ranked.length}</b>개 · 현재 1~${first.length}${esc(note)}</p>` + U.grid(first, U.companyCard);
+    h += U.pager("companies.page", ranked.length, "개 기업·기관")
+      + `<p class="result-count">조건에 맞는 기업·기관 <b>${fmt(ranked.length)}</b>개${esc(note)}</p>` + U.grid(L.paginate(ranked, st.page)[0], U.companyCard);
     if (!ranked.length) h += U.info("조건에 맞는 기업이 없습니다. 필터를 해제해 보세요.");
-    if (ranked.length > 10) h += U.btn(`기업 더보기 (11~${Math.min(20, ranked.length)}번째부터)`, "co-more", { kind: "secondary", icon: "⌄" });
   }
   return h + "</div></details>";
 };
+/** 분야 고르기(막대·칩·함께 하는 분야 공통): 여러 분야면 추가/해제, 숨은 분야면 더보기 펼침, 고르면 카드 펼침(요청 T2·X3) */
+function coPickArea(name) {
+  const st = P("companies");
+  st.area = st.multi ? (st.area.includes(name) ? st.area.filter((x) => x !== name) : [...st.area, name]) : (st.area[0] === name ? [] : [name]);
+  st.page = 0;
+  if (st.area.some((a) => (PG._coHidden || []).includes(a))) st.all = true;
+  if (st.area.length) st.cards_open = true;
+}
 
 /* ================= 상세 팝업 (components/dialogs.py) ================= */
 const DLG = {};
@@ -528,9 +583,3 @@ DLG.company = (id) => { const co = D.companyById[id];
   return h + `<div class="row-wrap">${isStr(co.homepage) && co.homepage.startsWith("http") ? U.link("홈페이지", co.homepage) : ""}${dscrap("company", id, co.company_name_normalized)}
     ${co.has_posting ? U.btn(`수집 공고 ${co.posting_count}건 보기`, "dlg-postings", { kind: "primary", arg: id }) : ""}
     ${U.btn("기업 탐색에서 보기", "dlg-explore", { arg: id })}</div>`; };
-DLG.company_list = () => { const ranked = PG._companyRanked || [], st = P("companies");
-  const [rows, total, no, last] = L.paginate(ranked, st.more || 1);
-  return dhead("기업 더보기", `조건에 맞는 기업·기관 ${total}개 중 ${no * 10 + 1}~${no * 10 + rows.length}`, "")
-    + rows.map((co) => `<div class="dlg-list"><p class="dlg-list__name">${esc(co.company_name_normalized)} ${U.defenseBadge(co.defense_group)}</p>
-      ${U.btn("상세", "dlg-switch", { arg: "company", arg2: co.company_id, arg3: "company_list" })}</div>`).join("")
-    + `<div class="row-wrap">${U.btn("이전 10개", "co-more-page", { arg: no - 1, disabled: no <= 1 })}${U.btn("다음 10개", "co-more-page", { arg: no + 1, disabled: no >= last })}</div>`; };

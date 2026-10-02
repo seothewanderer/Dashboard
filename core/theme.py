@@ -16,13 +16,12 @@ FONT_SANS = ('"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo
 
 # DESIGN §5 타이포: (size, line-height, weight, tracking)
 TYPE = {
-    "hero": ("64px", "72px", 800, "-0.03em"), "page-title": ("32px", "40px", 700, "-0.02em"),
+    "page-title": ("32px", "40px", 700, "-0.02em"),
     "section-title": ("24px", "32px", 700, "-0.01em"), "card-title": ("16px", "22px", 700, "0"),
     "chart-title": ("20px", "26px", 700, "-0.01em"),   # 차트 카드 제목(요청 F8: 카드 제목보다 크게)
     "body": ("14px", "22px", 400, "0"), "body-small": ("12px", "18px", 400, "0"),
     "label": ("11px", "16px", 700, "0.1em"), "caption": ("12px", "18px", 400, "0"),
     "nav": ("17px", "24px", 700, "0"), "data": ("28px", "34px", 700, "-0.02em"),
-    "nav-no": ("19px", "24px", 800, "0"),        # 메뉴 번호(이름보다 살짝 크게, 요청 D2)
     "brand": ("22px", "28px", 800, "-0.02em"),   # 사이드바 서비스명(메뉴보다 크게, 요청 D1)
     "button": ("14px", "20px", 700, "0.05em"),
     "kpi": ("34px", "40px", 800, "-0.02em"),     # 01 KPI 카드 숫자(요청 I1, Proposed)
@@ -59,10 +58,6 @@ BASE = {
     # 방산 대조색 (DESIGN §12.1 빨강, 요청 F2 — 테마와 무관). 배지 글자는 진한 빨강 위 흰색(8.99:1)
     "--defense-strong": "#E22134", "--defense-deep": "#8E1B26", "--defense-candidate": "rgba(226,33,52,0.4)",
     "--on-defense": "#FFFFFF", "--defense-grad-start": "#8E1B26", "--defense-grad-end": "#E22134",
-    # 홈 드론 (DESIGN §10, Proposed)
-    "--hero-h": "380px", "--hero-drone-w": "300px", "--hero-drone-h": "190px", "--hero-ring": "220px",
-    "--hero-entry-w": "168px",
-    "--hero-drone-w-lg": "528px", "--hero-drone-h-lg": "330px",   # 메뉴를 열기 전 큰 드론 (요청 D9)
     # 홈 3D 드론 Hero·요약 카드·이용 안내 (팀원 Home 반영, 요청 P1~P3, Proposed (not in source)) — 값은 팀원 home-only.html 그대로
     "--hm-h": "540px", "--hm-drone-w": "360px", "--hm-ring": "300px", "--hm-gap": "32px", "--hm-panel-w": "216px", "--hm-panel-pad-y": "12px", "--hm-panel-icon": "20px",   # 패널: 글자·여백 키움(요청 Q2)
     "--hm-toggle": "32px", "--hm-toggle-icon": "14px", "--hm-label-px": "10px",
@@ -87,7 +82,7 @@ BASE = {
 }
 # 글꼴 크기 배율 (요청 E1): 본문 전체 1.2배. 사이드바·카드는 원래 크기(TYPE 그대로), 카드 제목만 1.2배.
 FONT_SCALE = 1.2
-SIDEBAR_ONLY = ("nav", "nav-no", "brand")          # 사이드바 전용 역할은 배율 없음
+SIDEBAR_ONLY = ("nav", "brand")          # 사이드바 전용 역할은 배율 없음
 UNSCALED_SCOPES = ('section[data-testid="stSidebar"]', '[class*="st-key-card-"]')   # 원래 크기로 되돌리는 범위
 SCALED_IN_CARDS = ("card-title",)
 

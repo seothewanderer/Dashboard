@@ -1,7 +1,7 @@
 /* main.js — 화면 틀(사이드바·상단바·나의 탐색 경로), 다시 그리기, 동작 연결, 시작 (app.py·components/shell.py 대응). */
 "use strict";
 
-const NAV_NO = { industry: "01", jobs: "02", learning: "03", recruit: "04" };
+const NAV_ICON = { industry: "industry", jobs: "jobs", learning: "learning", recruit: "recruit" };   // 01~04 아이콘(요청 P7)
 const ROADMAP = [  // 번호, 제목, 선택 전 안내, 스크랩 종류(null = 목표 직무), 살펴보기 대상
   ["01", "목표 직무", "선택 전 · 직무 살펴보기", null, "jobs", null],
   ["02", "학습 내용", "교육 스크랩 전", "course", "learning", null],
@@ -22,13 +22,14 @@ function applyTheme() {
 function sidebar() {
   const cur = S.route.page, inRecruit = cur === "recruit", open = S.ui.nav_open;
   const item = (key, title) => { const name = key === "home" ? "홈" : title.slice(3);
-    return `<a href="#${key}" class="nav-item${key === cur ? " active" : ""}${key === "home" ? " home" : ""}" data-act="nav" data-arg="${key}">
-      <span class="nav-no">${NAV_NO[key] || ""}</span><span>${esc(name)}</span></a>`; };
+    return `<a href="#${key}" class="nav-item nav-item--${key}${key === cur ? " active" : ""}" data-act="nav" data-arg="${key}">
+      <span class="nav-ico" aria-hidden="true"></span><span>${esc(name)}</span></a>`; };
   const ctx = C_.page_default[inRecruit ? `recruit.${S.route.sub}` : cur];
   return `<p class="sidebar-brand"><span class="sidebar-brand__dot"></span>드론 진로 탐색</p>
     <nav class="nav">${PAGES.slice(0, 4).map(([k, t]) => item(k, t)).join("")}
-      <a href="#recruit/postings" class="nav-item nav-parent${inRecruit ? " active" : ""}" data-act="nav-recruit" title="${inRecruit ? "하위 메뉴 접기/펼치기" : "채용 현황으로 이동하고 하위 메뉴를 펼칩니다"}">
-        <span class="nav-no">04</span><span>채용·기업 탐색</span><span class="nav-caret">${open ? "⌃" : "⌄"}</span></a>
+      <div class="nav-parent-row${inRecruit ? " active" : ""}"><a href="#recruit/postings" class="nav-item nav-item--recruit nav-parent" data-act="nav-recruit" title="채용 현황으로 이동하고 하위 메뉴를 펼칩니다">
+        <span class="nav-ico" aria-hidden="true"></span><span>채용·기업 탐색</span></a>
+        <button type="button" class="nav-fold" data-act="nav-fold" title="하위 메뉴 펼치기/접기" aria-expanded="${open}">${open ? "⌃" : "⌄"}</button></div>
       ${open ? `<div class="nav-subtree">${Object.entries(RECRUIT_SUBS).map(([k, v]) => `<a href="#recruit/${k}" class="nav-sub${inRecruit && S.route.sub === k ? " active" : ""}" data-act="nav-sub" data-arg="${k}">${esc(v)}</a>`).join("")}</div>` : ""}
     </nav>
     <div class="sidebar-bottom"><aside class="context-card"><p class="context-card__title">${esc(ctx.title)}</p>
@@ -79,8 +80,10 @@ function render(o = {}) {
   const main = document.getElementById("main"), y = main.scrollTop;
   document.getElementById("app").classList.toggle("no-sidebar", !S.ui.sidebar_open);
   document.getElementById("sidebar").innerHTML = sidebar();
+  S._arrived = S._lastPage !== S.route.page; S._lastPage = S.route.page;   // 이번 그리기가 화면에 처음 들어온 것인지(홈 비행용)
   const page = PG[S.route.page]();
-  main.innerHTML = topbar() + `<div class="frame${S.ui.roadmap_open ? "" : " frame--wide"}"><div class="center">${page}</div>${S.ui.roadmap_open ? roadmap() : ""}</div>`;
+  if (S.route.page !== "home" && CH.cleanups.hh) { const done = CH.cleanups.hh; delete CH.cleanups.hh; setTimeout(done, 0); }   // 홈을 떠남 → 3D 정리
+  main.innerHTML = (S.route.page === "home" ? "" : topbar()) + `<div class="frame${S.ui.roadmap_open ? "" : " frame--wide"}"><div class="center">${page}</div>${S.ui.roadmap_open ? roadmap() : ""}</div>`;
   document.querySelectorAll("details > summary").forEach((s) => {   // 상태로 여닫는 영역(data-open-key)은 이미 반영됨
     if (!s.parentElement.dataset.openKey && openDetails.has(detailKey(s))) s.parentElement.open = true; });
   CH.mountAll();
@@ -98,18 +101,19 @@ function renderDialog() {
   const dlg = document.getElementById("dlg");
   if (!S.dialog) { if (dlg.open) dlg.close(); return; }
   const back = S.dialog.back;
-  dlg.innerHTML = `<div class="dlg-bar">${back ? U.btn(back === "company_list" ? "목록으로" : "이전 상세로", "dlg-back", { icon: "‹" }) : "<span></span>"}
+  dlg.innerHTML = `<div class="dlg-bar">${back ? U.btn("이전 상세로", "dlg-back", { icon: "‹" }) : "<span></span>"}
     ${U.btn("닫기", "dlg-close", { icon: "✕" })}</div><div class="dlg-body">${DLG[S.dialog.kind](S.dialog.id)}</div>`;
   if (!dlg.open) dlg.showModal();
 }
 
 /* ---------------- 동작 ---------------- */
 act("nav", (el) => go(el.dataset.arg));
-act("nav-recruit", () => { if (S.route.page === "recruit") S.ui.nav_open = !S.ui.nav_open; else { S.ui.nav_open = true; go("recruit", "postings"); return false; } });
+act("nav-recruit", () => { S.ui.nav_open = true; go("recruit", "postings"); return false; });   // 이름 = 늘 채용 현황(요청 T4)
+act("nav-fold", () => { S.ui.nav_open = !S.ui.nav_open; });                                   // ^ = 펼치기·접기만
 act("nav-sub", (el) => { go("recruit", el.dataset.arg); return false; });
 act("sub", (el) => { go("recruit", el.dataset.arg); return false; });
 act("go", (el) => { go(el.dataset.arg, el.dataset.arg2 || null); return false; });
-act("theme", (el) => { S.theme = el.dataset.arg; applyTheme(); });
+act("theme", (el) => { S.theme = el.dataset.arg; applyTheme(); delete CH.hosts.hh; S._lastPage = null; });   // 홈 무대를 새 테마 색으로 다시
 act("sidebar", () => { S.ui.sidebar_open = !S.ui.sidebar_open; });
 act("roadmap", () => { S.ui.roadmap_open = !S.ui.roadmap_open; });
 act("release", (el) => { if (el.dataset.arg) delete S.scrap[scrapKey(el.dataset.arg, el.dataset.arg2)]; else S.plan.goal_job_id = null; });
@@ -131,16 +135,15 @@ act("dlg-switch", (el) => { S.dialog = { kind: el.dataset.arg, id: el.dataset.ar
 act("dlg-skill", (el) => { go("learning", null, { job_id: el.dataset.arg, skill: el.dataset.arg2 }); return false; });
 act("dlg-postings", (el) => { go("recruit", "postings", { company_id: el.dataset.arg }); return false; });
 act("dlg-explore", (el) => { go("recruit", "companies", { company_ids: [el.dataset.arg] }); return false; });
-act("hero", (el) => { S.ui.home_menu_open = !S.ui.home_menu_open; const h = el.closest(".hero"); h.classList.toggle("open", S.ui.home_menu_open);
-  el.setAttribute("aria-expanded", S.ui.home_menu_open); h.querySelectorAll(".go").forEach((b) => { b.tabIndex = S.ui.home_menu_open ? 0 : -1; }); return false; });
-act("motion", (el) => { S.ui.motion = !S.ui.motion; el.closest(".hero").classList.toggle("move", S.ui.motion);
-  el.textContent = S.ui.motion ? "움직임 멈추기" : "움직임 재생"; save(); return false; });
-act("hero-go", (el) => { const [page, sub] = el.dataset.arg.split("."); go(page, sub || null); return false; });
 act("i02-jobs", () => { const st = P("industry"); go("jobs", null, { area: st.area, job_ids: D.applicationBridge
   .filter((r) => r.application_id === st.area && r.review_status !== "rejected").map((r) => r.job_id) }); return false; });
 act("go-companies-area", (el) => { go("recruit", "companies", { area: [el.dataset.arg] }); return false; });
 act("jobs-clear-handoff", () => { Object.assign(P("jobs"), { handoff: null, page: 0 }); });
-act("jobs-major", (el) => { const st = P("jobs"); st.major = st.major === el.dataset.val ? null : el.dataset.val; st.middle = null; st.page = 0; });
+act("jobs-major", (el) => { const st = P("jobs"); st.major = st.major === el.dataset.val ? null : el.dataset.val; st.middle = null; st.page = 0;
+  if (st.major) st.cards_open = true; });   // 고르면 직무 카드 펼침(요청 X3)
+act("jobs-acts", (el) => { ACTIONS.pill(el); if ((P("jobs").acts || []).length) P("jobs").cards_open = true; });
+act("ind-area", (el) => { ACTIONS.pill(el); indReveal(); });
+act("post-pill", (el) => { ACTIONS.pill(el); const st = P("postings"); if (["job", "region", "career", "edu"].some((k) => st[k].length)) st.cards_open = true; });
 act("j05-pick", (el) => { const st = P("jobs"); st.j05 = st.j05 === el.dataset.val ? null : el.dataset.val; st.j05_page = 0; });
 act("j05-select", (el) => { const st = P("jobs"); st.j05 = el.value || null; st.j05_page = 0; });
 act("learn-skill", (el) => { const st = P("learning"), v = el.dataset.val;
@@ -158,15 +161,15 @@ act("post-clear", () => { Object.assign(P("postings"), { job: [], region: [], ca
 act("post-clear-company", () => { Object.assign(P("postings"), { company: null, page: 0 }); });
 act("co-clear-ids", () => { P("companies").ids = null; });
 act("co-multi", (el) => { const st = P("companies"); st.multi = el.checked; if (!st.multi) st.area = st.area.slice(0, 1); });
-act("co-area", (el) => { const st = P("companies"), v = el.dataset.val;
-  st.area = st.multi ? (st.area.includes(v) ? st.area.filter((x) => x !== v) : [...st.area, v]) : (st.area[0] === v ? [] : [v]); });
-act("co-more", () => { P("companies").more = 1; S.dialog = { kind: "company_list" }; });
-act("co-more-page", (el) => { P("companies").more = +el.dataset.arg; });
+act("co-area", (el) => { coPickArea(el.dataset.val); });
+act("co-more-areas", () => { const st = P("companies"); st.all = !st.all; });
+act("co-kw", (el) => { const st = P("companies"); Object.assign(st, { kw: el.value, page: 0 }); if (el.value) st.cards_open = true; });
 act("input", (el) => { setv(el.dataset.key, el.value); if (el.dataset.reset) setv(el.dataset.reset, 0); });
 // 02 직무·기술 검색(요청 O4): 고르면 아래 직무 카드가 열림 / J05 전체 키워드 검색 상자
 act("jobs-search", (el) => { const st = P("jobs"); Object.assign(st, { text: el.value, page: 0 }); if (el.value) st.cards_open = true; });
 act("j05-input", (el) => { Object.assign(P("jobs"), { j05: el.value || null, j05_page: 0 }); });
-act("jobs-middle", (el) => { const st = P("jobs"); st.middle = st.middle === el.dataset.val ? null : el.dataset.val; st.page = 0; });
+act("jobs-middle", (el) => { const st = P("jobs"); st.middle = st.middle === el.dataset.val ? null : el.dataset.val; st.page = 0;
+  if (st.middle) st.cards_open = true; });
 // 02 오른쪽 열: 방산 관련 직무 ↔ 전체 보기(서로 해제, 요청 M7)
 act("j01-defense", () => { const on = !S.ui.highlight_defense; S.ui.highlight_defense = on; if (on) Object.assign(P("jobs"), { major: null, middle: null, page: 0 }); });
 act("j01-all", () => { S.ui.highlight_defense = false; Object.assign(P("jobs"), { major: null, middle: null, page: 0 }); });
@@ -194,8 +197,11 @@ function boot() {
   dlg.addEventListener("click", (e) => { if (e.target === dlg) { S.dialog = null; render(); } else handle(e, "click"); });
   dlg.addEventListener("cancel", (e) => { e.preventDefault(); S.dialog = null; render(); });
   window.addEventListener("hashchange", () => { readHash(); render({ scrollTop: true }); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S.ui.home_menu_open && S.route.page === "home") {
-    S.ui.home_menu_open = false; render(); } });
-  render();
+  // 글꼴(5개 굵기)을 모두 불러온 뒤 처음 그린다: 차트가 대체 글꼴로 글자 폭을 재면 줄바꿈·잘림이 달라짐(v5 렌더링 맞춤)
+  const ready = document.fonts && document.fonts.load
+    ? Promise.all([400, 500, 600, 700, 800].map((w) => document.fonts.load(`${w} 16px Pretendard`))).catch(() => null) : Promise.resolve();
+  Promise.race([ready, new Promise((r) => setTimeout(r, 2500))]).then(() => render());
 }
+/** 01 분야: 접힌 상태에서 안 보이는 분야(흐린 맨 아래 줄부터)를 고르면 '분야 더보기'를 펼친다(요청 T2) */
+function indReveal() { const st = P("industry"); if (st.area && (PG._indHidden || []).includes(st.area)) st.all = true; }
 boot();

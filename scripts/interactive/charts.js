@@ -8,7 +8,7 @@ const ROW_H = G.row_h, BAR_W = G.bar_w;
 const tok = () => ({ ...D.theme.base, ...D.theme.modes[S.theme] });
 const c = (name) => tok()[`--${name}`];
 const px = (role) => { const [size] = D.theme.type[role]; const n = parseFloat(size);
-  return ["nav", "nav-no", "brand"].includes(role) ? n : Math.round(n * D.theme.font_scale); };
+  return ["nav", "brand"].includes(role) ? n : Math.round(n * D.theme.font_scale); };
 const FONT = '"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",Arial,sans-serif';
 echarts.registerMap("korea", D.geo);
 
@@ -68,11 +68,10 @@ const lin = (a, b, horizontal) => ({ type: "linear", x: 0, y: 0, x2: horizontal 
   colorStops: [{ offset: 0, color: c(a) }, { offset: 1, color: c(b) }] });
 CH.grad = (h = true) => lin("chart-grad-start", "chart-grad-end", h);
 CH.dgrad = (h = true) => lin("defense-grad-start", "defense-grad-end", h);
-CH.defenseStyle = (tier, highlight) => {
-  if (tier === "direct") return { color: CH.dgrad(), decal: decal() };
-  if (tier === "candidate") return { color: c("defense-candidate"), decal: decal(), borderColor: c("defense-strong"), borderWidth: 1 };
-  return { color: highlight ? c("chart-muted") : CH.grad() };
-};
+// 방산 막대는 근거 단계와 관계없이 모두 같은 모양(요청 T3), 마우스를 올려도 빨강 유지 + 빨간 글로우
+CH.defenseStyle = (tier, highlight) => (tier ? { color: CH.dgrad(), decal: decal() } : { color: highlight ? c("chart-muted") : CH.grad() });
+CH.defenseEmphasis = () => ({ itemStyle: { color: CH.dgrad(), decal: decal(), shadowBlur: G.glow, shadowColor: c("defense-strong") },
+  label: { color: c("defense-strong") } });
 const KIND = { defense: (h) => ({ color: CH.dgrad(h), decal: decal() }), general: (h) => ({ color: CH.grad(h) }),
   other: () => ({ color: c("chart-muted") }) };
 const legend = () => ({ top: 0, left: 0, icon: "roundRect", itemWidth: 12, itemHeight: 12,
@@ -85,22 +84,24 @@ const rankOf = (values) => { const u = uniq(values).sort((a, b) => b - a); retur
 /* ---------------- 가로 막대 ---------------- */
 CH.hbar = (cats, values, o = {}) => {
   const sel = o.selected || [], total = values.reduce((a, b) => a + b, 0) || 1, rank = rankOf(values);
+  const bw = o.thin ? Math.floor(BAR_W * 2 / 3) : BAR_W, rowH = o.thin ? G.row_h_thin : ROW_H;   // thin = 얇은 막대(요청 Y3)
   const data = cats.map((cat, i) => {
     const tier = o.tiers ? o.tiers[i] : null;
-    const style = { borderRadius: BAR_W / 2, ...CH.defenseStyle(tier, o.highlight) };
+    const style = { borderRadius: bw / 2, ...CH.defenseStyle(tier, o.highlight) };
     if (sel.length && !tier && !o.highlight) style.color = sel.includes(cat) ? c("chart-highlight") : c("chart-dim");
-    return { value: values[i], name: cat, share: Math.round(values[i] / total * 1000) / 10, rank: rank(values[i]), itemStyle: style };
+    return { value: values[i], name: cat, share: Math.round(values[i] / total * 1000) / 10, rank: rank(values[i]), itemStyle: style,
+      ...(tier ? { emphasis: CH.defenseEmphasis() } : {}) };
   });
   return [{ grid: { left: G.pad, right: G.value_gutter, top: G.pad_sm, bottom: G.pad_sm, containLabel: true },
     xAxis: { type: "value", show: false, max: values.length ? Math.max(...values) : 1 },
     yAxis: { type: "category", inverse: true, axisLabel: { color: c("text-3"), fontSize: px("body-small"), width: G.label_w, overflow: "truncate" },
       data: cats.map((cat) => ({ value: cat, textStyle: sel.includes(cat) ? { fontWeight: 700, color: c("text") } : {} })) },
     tooltip: { trigger: "item", formatter: tipItem(o.unit || "", o.note) },
-    series: [{ type: "bar", data, barWidth: BAR_W, showBackground: true, cursor: "pointer",
-      backgroundStyle: { color: c("chart-track"), borderRadius: BAR_W / 2 },
+    series: [{ type: "bar", data, barWidth: bw, showBackground: true, cursor: "pointer",
+      backgroundStyle: { color: c("chart-track"), borderRadius: bw / 2 },
       label: { show: true, position: "right", color: c("text"), fontWeight: 700, fontSize: px("body") },
       emphasis: { itemStyle: glow(c("chart-highlight")), label: { color: c("chart-highlight") } }, universalTransition: true }] },
-  ROW_H * Math.max(cats.length, 1) + 2 * G.pad];
+  rowH * Math.max(cats.length, 1) + 2 * G.pad];
 };
 
 /* ---------------- 세로 막대 ---------------- */
@@ -144,7 +145,7 @@ CH.stackedHbar = (cats, series, o = {}) => {
       itemStyle: { ...KIND[kind](true), borderColor: c("surface"), borderWidth: 1 },
       data: cats.map((cat, i) => ({ value: vals[i], name: cat, total: totals[i], ...(sel.length && !sel.includes(cat) ? { itemStyle: { opacity: G.dim } } : {}) })),
       label: { show: si === series.length - 1, position: "right", color: c("text"), fontWeight: 700, fontSize: px("body"), formatter: (p) => p.data.total },
-      emphasis: { focus: "none", itemStyle: { shadowBlur: G.glow, shadowColor: c("chart-highlight") } } })) },
+      emphasis: { focus: "none", itemStyle: { shadowBlur: G.glow, shadowColor: c(kind === "defense" ? "defense-strong" : "chart-highlight") } } })) },
   ROW_H * Math.max(cats.length, 1) + 2 * G.pad + 3 * G.pad];
 };
 CH.divergingHbar = (cats, left, right, o = {}) => {
@@ -392,9 +393,13 @@ CH.net3dData = (jobs, o) => {
 };
 /** 앱 부품 JS(G3·LCM)를 붙이는 자리: 다시 그려도 같은 요소를 다시 붙여 회전 상태가 이어진다 */
 CH.hosts = {};
-CH.mountComp = (id, fn, data, onTrigger) => CH.after.push(() => {
+CH.cleanups = {};       // 부품이 돌려준 정리 함수(홈 3D: 홈을 떠나면 그리기 반복을 멈춤)
+CH.mountComp = (id, fn, data, onTrigger, onState) => CH.after.push(() => {
   const ph = document.querySelector(`[data-comp="${id}"]`); if (!ph) return;
   const el = CH.hosts[id] || (CH.hosts[id] = document.createElement("div"));
   ph.replaceWith(el);
-  fn({ data, parentElement: el, setTriggerValue: (name, value) => { onTrigger(name, value); save(); render(); } });
+  // setStateValue(홈 메뉴 열림·움직임)은 저장만 하고 다시 그리지 않는다(부품이 스스로 상태를 그림)
+  const ret = fn({ data, parentElement: el, setTriggerValue: (name, value) => { onTrigger(name, value); save(); render(); },
+    setStateValue: (name, value) => { if (onState) onState(name, value); } });
+  if (typeof ret === "function") CH.cleanups[id] = ret;
 });
