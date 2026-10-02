@@ -146,15 +146,17 @@ def render(options: dict, key: str, height: int, on_click: Callable[[str], None]
 
 def hbar(categories: list[str], values: list[float], *, selected: list[str] | None = None,
          tiers: list[str | None] | None = None, highlight: bool = False, unit: str = "",
-         tooltip_note: str = "") -> tuple[dict, int]:
-    """가로 막대 + 14px 트랙 (DESIGN §11.3). 반환: (옵션, 높이)."""
+         tooltip_note: str = "", thin: bool = False) -> tuple[dict, int]:
+    """가로 막대 + 트랙 (DESIGN §11.3). 반환: (옵션, 높이).
+    thin = 얇은 막대(굵기 2/3, 줄 높이 row_h_thin — 03·04 얇은 막대와 같은 굵기, 요청 Y3)."""
+    bw, row_h = (BAR_W * 2 // 3, G["row_h_thin"]) if thin else (BAR_W, ROW_H)
     selected = selected or []
     total = sum(values) or 1
     order = {v: i + 1 for i, v in enumerate(sorted(set(values), reverse=True))}
     data = []
     for i, (cat, v) in enumerate(zip(categories, values)):
         tier = tiers[i] if tiers else None
-        style = {"borderRadius": BAR_W // 2, **defense_style(tier, highlight)}
+        style = {"borderRadius": bw // 2, **defense_style(tier, highlight)}
         if selected and tier is None and not highlight:
             style["color"] = c("chart-highlight") if cat in selected else c("chart-dim")
         data.append({"value": v, "name": cat, "share": round(v / total * 100, 1), "rank": order[v],
@@ -170,15 +172,15 @@ def hbar(categories: list[str], values: list[float], *, selected: list[str] | No
                   "data": [{"value": cat, "textStyle": {"fontWeight": 700, "color": c("text")} if cat in selected else {}}
                            for cat in categories]},
         "tooltip": {"trigger": "item", "formatter": _tooltip_js(unit, tooltip_note)},
-        "series": [{"type": "bar", "data": data, "barWidth": BAR_W, "showBackground": True, "cursor": "pointer",
-                    "backgroundStyle": {"color": c("chart-track"), "borderRadius": BAR_W // 2},
+        "series": [{"type": "bar", "data": data, "barWidth": bw, "showBackground": True, "cursor": "pointer",
+                    "backgroundStyle": {"color": c("chart-track"), "borderRadius": bw // 2},
                     "label": {"show": True, "position": "right", "color": c("text"), "fontWeight": 700,
                               "fontSize": theme.px("body")},
                     "emphasis": {"itemStyle": _glow(c("chart-highlight")),
                                  "label": {"color": c("chart-highlight")}},
                     "universalTransition": True}],
     }
-    return options, ROW_H * max(len(categories), 1) + 2 * G["pad"]
+    return options, row_h * max(len(categories), 1) + 2 * G["pad"]
 
 
 def stacked_hbar(categories: list[str], series: list[tuple[str, list[float], str]], *, unit: str = "",

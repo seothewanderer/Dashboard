@@ -23,7 +23,8 @@ if key != "recruit":
     routing.clear_sub_from_url()   # 04 전용 ?sub= 가 다른 페이지 주소에 남지 않게
 shell.render_nav(pages, key, nav_slot)
 shell.render_context_card(f"recruit.{sub}" if sub else key, ctx_slot)
-shell.render_topbar(f"{current.title} · {routing.RECRUIT_SUBS[sub]}" if sub else current.title)
+if key != "home":   # 홈은 맨 위 줄 없이 바로 제목부터(요청 Y1). 다른 화면은 그대로
+    shell.render_topbar(f"{current.title} · {routing.RECRUIT_SUBS[sub]}" if sub else current.title)
 
 status = data_loader.build_status()
 if status:

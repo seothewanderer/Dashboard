@@ -495,6 +495,12 @@ Source: the teammate's home-only build (`home-only.html`). Values are copied fro
   - Opening does not scroll. Only the explicit '보러가기' buttons scroll.
   - **04 company cards:** the defense-only toggle and the sort control share one row, and the 정렬 label is hidden.
 
+- **Y-round (2026-10-02):**
+  - **Home:** no top bar. The page starts with the title. The other pages keep the top bar, including its 탐색 경로 toggle.
+  - **Home spacing:** `--hm-guide-mt` and `--hm-faq-mt` go from 104/136px to 48px, and the gap under the FAQ title from 24px to 8px.
+  - **Thin horizontal bars** (`hbar(thin=True)`): 2/3 bar width (the same as the 03/04 thin bars) and a 30px row (`CHART.row_h_thin`).
+  - **04 채용 현황:** the 경력·학력 charts use thin bars and sit in a fixed-title expander, '경력·학력 조건 보기', closed by default.
+
 ### 12.10 O-round (user requests 2026-10-02, global + 02) — Proposed (not in source)
 
 - **Card base border:** every card has a `--card-border-w` border in `--control` (dark #535353, light #D1D1D1). Defense, drone, goal and picked styles override it as before.

@@ -113,11 +113,11 @@ def render() -> None:
                       on_click=lambda: [st.session_state.update({v: [] for v in KEYS.values()}),
                                         st.session_state.update({PAGE: 0})])
 
-    def bar(dim: str, meta: str, title: str, order=None, key_suffix=""):
+    def bar(dim: str, meta: str, title: str, order=None, key_suffix="", thin=False):
         c = P.dim_counts(scoped, dim, filters, order)
         with chart_card(meta, key=f"h-{dim}", title=title, n=len(scoped),
                         table=c.rename(columns={dim: "구분", "n": "공고 수"})):
-            opt, h = charts.hbar(c[dim].tolist(), c.n.tolist(), selected=filters[dim], unit="건")
+            opt, h = charts.hbar(c[dim].tolist(), c.n.tolist(), selected=filters[dim], unit="건", thin=thin)
             charts.render(opt, f"h_{dim}{key_suffix}", h,   # 막대 클릭 = 위 '공고 조건으로 거르기' 단추와 같은 키(켜기·끄기 공유)
                           on_click=lambda name: (toggle_value(KEYS[dim], name, multi=True, reset=PAGE), _open_cards()))
 
@@ -169,11 +169,13 @@ def render() -> None:
         st.caption("지도에 마우스를 올리면 왼쪽 막대가 그 지역 값으로 바뀌고, 누르면 그 지역 공고만 봅니다. "
                    "막대를 누르면 그 직무로 거릅니다(다시 누르면 해제).")
 
-    a, b = st.columns(2, gap="medium")
-    with a:
-        bar("career_type", "H02", "경력 조건", P.CAREER_ORDER)
-    with b:
-        bar("education_normalized", "H02", "학력 조건", P.EDUCATION_ORDER)
+    # 경력·학력 조건 = 펼치기(요청 Y3, 기본 닫힘·제목 고정). 막대는 얇게·촘촘하게
+    with st.expander("경력·학력 조건 보기", key="post_cond_open", on_change="rerun"):
+        a, b = st.columns(2, gap="medium")
+        with a:
+            bar("career_type", "H02", "경력 조건", P.CAREER_ORDER, thin=True)
+        with b:
+            bar("education_normalized", "H02", "학력 조건", P.EDUCATION_ORDER, thin=True)
 
     # (H07 비율 그래프는 위 '어느 직무의 공고인가'의 '비율' 보기로 합침, 요청 N3)
 

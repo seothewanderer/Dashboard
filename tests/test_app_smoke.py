@@ -86,7 +86,7 @@ def test_sub_is_kept_after_visiting_another_page():
 
 
 def test_roadmap_panel_toggle():
-    at = run()
+    at = run("views/p02_jobs.py")                 # 홈은 상단바가 없어(요청 Y1) 다른 화면에서 확인
     assert any('<p class="roadmap__title">' in h.proto.body for h in at.get("html"))
     at.button(key="topbar_roadmap").click().run()
     assert not any('<p class="roadmap__title">' in h.proto.body for h in at.get("html"))

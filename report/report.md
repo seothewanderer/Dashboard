@@ -1,5 +1,16 @@
 # report.md — 변경 기록
 
+### 2026-10-02 — 23차 수정: 홈 상단바 없앰·간격, 채용 현황 경력·학력 펼치기
+- Type: Design
+- Summary: 요청 Y.
+  - 홈에서만 상단바(서비스명·화면 이름·탐색 경로 접기)를 그리지 않음. 홈에서는 탐색 경로 접기 단추가 없어짐을 보고함.
+  - 홈 간격 104·136 → 48px, FAQ 제목 아래 24 → 8px.
+  - 채용 현황 경력·학력 그래프를 '경력·학력 조건 보기' 펼치기(기본 닫힘)로 옮기고, 얇은 막대(굵기 2/3, 줄 높이 30px)로 바꿈.
+  - 확인(8502, 1440×900): 홈 상단바 없음·간격, 펼치기 열림 시 두 그래프.
+  - 테스트 81개 통과(탐색 경로 접기 테스트는 02 화면에서 확인하게 바꿈).
+- Files: app.py, core/theme.py, components/charts.py, views/recruit/postings.py, static/css/base.css, tests/test_app_smoke.py
+- Docs updated: design/DESIGN.md(§12.11)
+
 ### 2026-10-02 — 집(새 PC) 환경용 guide 폴더
 - Type: Feature (개발 환경)
 - Summary:

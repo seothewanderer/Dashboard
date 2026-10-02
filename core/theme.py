@@ -71,9 +71,10 @@ BASE = {
     "--hm-font-kpi-label": f"600 13px/18px {FONT_SANS}", "--hm-font-kpi-value": f"700 clamp(26px,3.4cqi,34px)/40px {FONT_SANS}",
     "--hm-font-kpi-unit": f"600 clamp(14px,1.7cqi,17px)/22px {FONT_SANS}",
     "--hm-font-panel": f"700 16px/22px {FONT_SANS}", "--hm-font-panel-desc": f"400 13px/20px {FONT_SANS}",
-    "--hm-guide-mt": "104px", "--hm-guide-pad": "36px 40px", "--hm-guide-col-gap": "32px", "--hm-guide-no": "32px",
+    "--hm-guide-mt": "48px",   # 104 → 48(요청 Y2)
+    "--hm-guide-pad": "36px 40px", "--hm-guide-col-gap": "32px", "--hm-guide-no": "32px",
     "--hm-font-guide-no": f"700 14px/1 {FONT_SANS}", "--hm-font-guide-title": f"700 16px/24px {FONT_SANS}",
-    "--hm-guide-title-gap": "20px 0 8px", "--hm-faq-mt": "136px",
+    "--hm-guide-title-gap": "20px 0 8px", "--hm-faq-mt": "48px",   # 136 → 48(요청 Y2)
     # 3D를 쓸 수 없을 때의 SVG 드론 색(모드 공통)
     "--hm-sv-shadow": "#000000", "--hm-sv-arm-under": "#16181B", "--hm-sv-arm-top": "#4A4F56", "--hm-sv-mount": "#1C1E22",
     "--hm-sv-band": "#0D0E10", "--hm-sv-bell": "#1A1C1F", "--hm-sv-shaft": "#C3C8CE", "--hm-sv-ghost": "#3A3E44",
@@ -169,7 +170,8 @@ MODE = {
 }
 
 # 차트 치수 (DESIGN §8, §11.3)
-CHART = {"row_h": 42, "bar_w": 22, "dim": 0.35, "glow": 12, "pad": 8, "pad_sm": 4, "value_gutter": 64,
+CHART = {"row_h": 42, "bar_w": 22, "row_h_thin": 30,   # row_h_thin: 얇은 가로 막대 줄 높이(요청 Y3, Proposed)
+         "dim": 0.35, "glow": 12, "pad": 8, "pad_sm": 4, "value_gutter": 64,
          "label_w": 160, "heat_row_h": 28, "heat_extra": 48, "treemap_h": 320,
          "cell_radius": 4, "tree_alpha": (0.22, 0.62), "tile_radius": 6, "map_h": 460, "map_aspect": 0.85,
          # 직무 네트워크 (요청 F3): 노드 크기, 선택 시 확대/축소 배율, 흐림, 확대 비율, 높이

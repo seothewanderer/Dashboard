@@ -199,7 +199,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] > div { fl
 .hm-guide__title { font: var(--hm-font-guide-title); color: var(--text); margin: var(--hm-guide-title-gap); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hm-guide__body { font: var(--font-body); color: var(--text-2); margin: 0; padding-right: var(--space-xs); word-break: keep-all; text-wrap: pretty; }
 .hm-guide__note { font: var(--font-caption); color: var(--text-2); margin: var(--space-sm) 0 0; }
-.section-title.hm-faq-title { margin-top: var(--hm-faq-mt); margin-bottom: var(--space-lg); }
+.section-title.hm-faq-title { margin-top: var(--hm-faq-mt); margin-bottom: var(--space-xs); }   /* 제목 → 첫 질문 간격 줄임(요청 Y2) */
 .hm-note { font: var(--font-caption); color: var(--text-2); margin: var(--space-xl) 0 0; padding-top: var(--space-md);
   border-top: var(--border-w) solid var(--border); max-width: var(--measure); }
 @media (max-width: 1024px) { .hm-guide__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-xl); }
