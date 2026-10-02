@@ -14,14 +14,6 @@ def _split_title(title: str) -> tuple[str, str]:
     return (no, name) if no.isdigit() else ("", title)
 
 
-def _nav_marks_css(pages: dict[str, st.Page]) -> str:
-    """메뉴 번호를 이름과 분리해 고정 폭 칸에 그린다(요청 D2: 줄 맞춤·번호 조금 크게). 홈 칸은 아이콘(D3, base.css)."""
-    rules = [f'[class*="st-key-nav-item"][class*="-{k}"] a::before{{content:"{_split_title(pages[k].title)[0]}"}}'
-             for k in ("industry", "jobs", "learning")]
-    rules.append(f'[class*="st-key-nav-parent"] button::before{{content:"{_split_title(pages["recruit"].title)[0]}"}}')
-    return f"<style>{''.join(rules)}</style>"
-
-
 # 오른쪽 '나의 탐색 경로' (요청 D6·E4·E5): 번호, 제목, 선택 전 안내, 스크랩 종류(None = 목표 직무), 살펴보기 대상(페이지, 하위)
 ROADMAP_TITLE = "나의 탐색 경로"
 ROADMAP_STEPS = [
@@ -36,8 +28,7 @@ def render_nav(pages: dict[str, st.Page], current: str, slot=None) -> None:
     """기본 메뉴를 숨기고 직접 그린다: 단일 항목 4개 + '04 채용·기업 탐색' 펼침 메뉴.
     상위 항목을 누르면 하위 메뉴를 펼치고 기본 하위 페이지(채용 현황)로 이동한다(요청 B4)."""
     with slot or st.sidebar:
-        st.html('<p class="sidebar-brand"><span class="sidebar-brand__dot"></span>드론 진로 탐색</p>'
-                + _nav_marks_css(pages))
+        st.html('<p class="sidebar-brand"><span class="sidebar-brand__dot"></span>드론 진로 탐색</p>')
         with st.container(key="nav"):
             for key in ("home", "industry", "jobs", "learning"):
                 with st.container(key=f"nav-item{'-active' if key == current else ''}-{key}"):
@@ -47,18 +38,19 @@ def render_nav(pages: dict[str, st.Page], current: str, slot=None) -> None:
             nav_open = st.session_state["ui"]["nav_open"]
             if in_recruit and st.session_state.get("_nav_last") != "recruit":
                 nav_open["recruit"] = True          # 다른 화면에서 04로 들어오면 펼침
+            st.session_state["_nav_prev"] = st.session_state.get("_nav_last")   # 직전 화면(홈 복귀 비행 방향, 요청 P1)
             st.session_state["_nav_last"] = current
             is_open = nav_open["recruit"]
-            with st.container(key=f"nav-parent{'-active' if in_recruit else ''}"):
+            # 이름 = 채용 현황으로 이동(+펼침), 오른쪽 ^ = 하위 메뉴 펼치기·접기만(이동 없음, 요청 T4)
+            with st.container(key=f"nav-parent{'-active' if in_recruit else ''}", gap=None):
                 if st.button(_split_title(pages["recruit"].title)[1], key="nav_recruit_toggle", type="tertiary", width="stretch",
-                             icon=":material/expand_less:" if is_open else ":material/expand_more:",
-                             icon_position="right",
-                             help="하위 메뉴 접기/펼치기" if in_recruit else "채용 현황으로 이동하고 하위 메뉴를 펼칩니다"):
-                    if in_recruit:                  # 04 안에서는 접기/펼치기 (요청 F7)
-                        nav_open["recruit"] = not is_open
-                        st.rerun()
+                             help="채용 현황으로 이동하고 하위 메뉴를 펼칩니다"):
                     nav_open["recruit"] = True
                     routing.go("recruit", sub=routing.DEFAULT_SUB)
+                with st.container(key="nav-fold", width="content"):
+                    st.button("", key="nav_recruit_fold", type="tertiary", help="하위 메뉴 펼치기/접기",
+                              icon=":material/expand_less:" if is_open else ":material/expand_more:",
+                              on_click=lambda: nav_open.update(recruit=not is_open))
             if is_open:
                 with st.container(key="nav-subtree"):
                     for sub, label in routing.RECRUIT_SUBS.items():

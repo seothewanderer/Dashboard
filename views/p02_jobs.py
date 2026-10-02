@@ -44,7 +44,7 @@ with f1:   # 직무·기술 검색 = 검색 상자(요청 O2·O4): 입력하면 
     text = search_box("직무·기술 검색", jf["job_title_ko"].tolist() + [s for sk in jf["skills"] for s in sk],
                       key="jobs_text", placeholder="예: 자율비행, GIS, CAD · 입력하거나 펼쳐서 찾기",
                       on_change=lambda: st.session_state.update({PAGE: 0, CARDS_OPEN: bool(st.session_state.get("jobs_text"))}))
-acts = f2.pills("하는 일", ACTIVITIES, selection_mode="multi", key="jobs_acts")
+acts = f2.pills("하는 일", ACTIVITIES, selection_mode="multi", key="jobs_acts", on_change=lambda: _open_cards())
 # 근거 유형 필터는 삭제(요청 O3). 방산 강조는 그래프 오른쪽 빨강 단추(요청 M5), '방산 강조 중' 안내 줄은 뺌(요청 M12)
 base = J.filter_jobs(jf, activities=acts, text=text,
                      job_ids=carried.get("job_ids") if carried else None)
@@ -52,6 +52,12 @@ base = J.filter_jobs(jf, activities=acts, text=text,
 # ---- J01 직무 네트워크 (요청 F3): 대분류·중분류 클릭 = 기존 필터, 직무 클릭 = 상세 팝업 ----
 major = st.session_state.get(MAJOR)
 middle = st.session_state.get(MIDDLE) if major else None
+
+
+def _open_cards() -> None:
+    """그래프·칩으로 무언가를 고르면 직무 카드를 펼친다(요청 X3, 03과 같은 규칙: 해제해도 닫지 않음)."""
+    if st.session_state.get(MAJOR) or st.session_state.get(MIDDLE) or st.session_state.get("jobs_acts"):
+        st.session_state[CARDS_OPEN] = True
 
 
 def _net_click(name: str) -> None:
@@ -69,9 +75,11 @@ def _net_click(name: str) -> None:
         parent = parents.iloc[0]
         same = st.session_state.get(MIDDLE) == value
         st.session_state.update({MAJOR: parent, MIDDLE: None if same else value, PAGE: 0})
-    elif kind == "J":
+    if kind in ("M", "D"):                                 # 대분류·중분류를 고르면 직무 카드 펼침(요청 X3)
+        _open_cards()
+    if kind == "J":
         dialogs.open_dialog("job", value)
-    elif kind == "R":                                     # 가운데(전체) = 선택 해제
+    if kind == "R":                                     # 가운데(전체) = 선택 해제
         st.session_state.update({MAJOR: None, MIDDLE: None, PAGE: 0})
 
 
@@ -124,12 +132,12 @@ with chart_card("J01", title="드론 직무 네트워크",
         st.html('<div class="j01-sep"><span>대분류</span></div>')
         with st.container(key="j01-list-major"):
             st.pills("대분류", majors, key=MAJOR, label_visibility="collapsed",
-                     on_change=lambda: st.session_state.update({PAGE: 0, MIDDLE: None}))
+                     on_change=lambda: (st.session_state.update({PAGE: 0, MIDDLE: None}), _open_cards()))
         st.html('<div class="j01-sep"><span>중분류</span></div>')
         if major:
             with st.container(key="j01-list-middle"):
                 st.pills("중분류", middles, key=MIDDLE,
-                         label_visibility="collapsed", on_change=lambda: st.session_state.update({PAGE: 0}))
+                         label_visibility="collapsed", on_change=lambda: (st.session_state.update({PAGE: 0}), _open_cards()))
         else:
             st.html('<p class="j01-hint">대분류를 먼저 선택하세요</p>')
         # 바로가기: 열 맨 아래 고정(중분류가 늘거나 줄어도 그대로). 이 단추만 카드로 이동. 위 구분선은 없앰(요청 M10)

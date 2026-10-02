@@ -70,18 +70,20 @@ def goal_status_line(n_related: int, n_total: int) -> None:
 
 
 def pager(page_key: str, total: int, size: int = 10, label: str = "개") -> int:
-    """'전체 N개 중 a~b' + 이전/다음. 반환: 현재 묶음 번호."""
+    """'전체 N개 중 a~b  ‹ 이전 10개  현재/전체  다음 10개 ›' (요청 W2). 반환: 현재 묶음 번호(0부터).
+    순환: 첫 페이지에서 '이전' = 마지막 페이지, 마지막에서 '다음' = 첫 페이지. 한 페이지뿐이면 단추를 막는다."""
     last = max(0, (total - 1) // size)
     no = min(st.session_state.get(page_key, 0), last)
     st.session_state[page_key] = no
     start, end = (no * size + 1, min(total, (no + 1) * size)) if total else (0, 0)
     with st.container(horizontal=True, vertical_alignment="center", key=f"pager-{page_key}"):
         st.html(f'<p class="pager__text">전체 {total:,}{label} 중 {start}~{end}</p>', width="content")
-        st.button("이전 10개", key=f"{page_key}_prev", disabled=no == 0, type="tertiary",
-                  icon=":material/chevron_left:", on_click=lambda: st.session_state.update({page_key: no - 1}))
-        st.button("다음 10개", key=f"{page_key}_next", disabled=no >= last, type="tertiary",
+        st.button("이전 10개", key=f"{page_key}_prev", disabled=last == 0, type="tertiary",
+                  icon=":material/chevron_left:", on_click=lambda: st.session_state.update({page_key: last if no == 0 else no - 1}))
+        st.html(f'<p class="pager__no"><b>{no + 1}</b> / {last + 1}</p>', width="content")
+        st.button("다음 10개", key=f"{page_key}_next", disabled=last == 0, type="tertiary",
                   icon=":material/chevron_right:", icon_position="right",
-                  on_click=lambda: st.session_state.update({page_key: no + 1}))
+                  on_click=lambda: st.session_state.update({page_key: 0 if no >= last else no + 1}))
     return no
 
 

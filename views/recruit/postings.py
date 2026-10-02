@@ -20,14 +20,21 @@ from components.filters import (as_list, goal_status_line, goal_toggle,
 from core import routing, state
 from core.data_loader import load_table
 from core.datasets import company_frame, job_frame, posting_frame
+from content.module_meta import POSTINGS_AS_OF
 
 PAGE = "post_page"
 KEYS = {"job_major_category": "post_job", "province_name": "post_region", "career_type": "post_career",
         "education_normalized": "post_edu"}
-COLLECTED = "2026년 9월 14일"                              # 공고 수집일(원본에 날짜 열 없음, 사용자 확인 2026-10-02)
+COLLECTED = POSTINGS_AS_OF                                 # 공고 기준일(원본에 날짜 열 없음, 사용자 확인 2026-10-02, 홈·FAQ와 같은 값)
 RATIO = "post_ratio"                                       # 직무 막대 '비율(%)로 보기'(요청 N6)
 DEF_ONLY_ALL = "post_only_defense_all"                     # 방산 관련 기업만 보기(아래 전체, 요청 N7)
 CARDS_OPEN, CARDS_GO = "post_cards_open", "post_cards_go"  # 공고 카드 펼치기 열림 · '스크랩하러 가기' 누른 시각
+
+
+def _open_cards() -> None:
+    """그래프·지도·조건 칩으로 무언가를 고르면 공고 카드를 펼친다(요청 X3, 03과 같은 규칙: 해제해도 닫지 않음)."""
+    if any(as_list(st.session_state.get(k)) for k in KEYS.values()):
+        st.session_state[CARDS_OPEN] = True
 
 
 def _goal_job():
@@ -73,18 +80,18 @@ def render() -> None:
             st.html('<p class="mc-label">학력</p>', width="content")
             st.pills("학력", [v for v in P.EDUCATION_ORDER if v in set(pf.education_normalized)], selection_mode="multi",
                      key=KEYS["education_normalized"], label_visibility="collapsed",
-                     on_change=lambda: st.session_state.update({PAGE: 0}))
+                     on_change=lambda: (st.session_state.update({PAGE: 0}), _open_cards()))
         with c2, st.container(horizontal=True, vertical_alignment="center", key="mc-career"):
             st.html('<p class="mc-label">경력</p>', width="content")
             st.pills("경력", [v for v in P.CAREER_ORDER if v in set(pf.career_type)], selection_mode="multi",
                      key=KEYS["career_type"], label_visibility="collapsed",
-                     on_change=lambda: st.session_state.update({PAGE: 0}))
+                     on_change=lambda: (st.session_state.update({PAGE: 0}), _open_cards()))
         with c3, st.container(horizontal=True, vertical_alignment="center", key="mc-region"):
             st.html('<p class="mc-label">지역</p>', width="content")
             # 드롭다운(요청 N11) = 지도와 같은 지역 필터(지도를 누르거나 끄면 여기도 바뀜)
             st.multiselect("지역", sorted(pf.province_name.unique()), key=KEYS["province_name"],
                            label_visibility="collapsed", placeholder="전체 지역 · 눌러서 선택",
-                           on_change=lambda: st.session_state.update({PAGE: 0}))
+                           on_change=lambda: (st.session_state.update({PAGE: 0}), _open_cards()))
         with c4, st.container(horizontal_alignment="right"):   # 거르기 영역 안 오른쪽(요청 N2)
             # 방산 관련 기업만 보기(요청 N7): 아래 그래프·카드 전체를 방산 관련 기업 공고로만. 이 화면 전용 상태
             # (02·기업 탐색의 '방산 강조'(흐리게만)와는 별개)
@@ -112,7 +119,7 @@ def render() -> None:
                         table=c.rename(columns={dim: "구분", "n": "공고 수"})):
             opt, h = charts.hbar(c[dim].tolist(), c.n.tolist(), selected=filters[dim], unit="건")
             charts.render(opt, f"h_{dim}{key_suffix}", h,   # 막대 클릭 = 위 '공고 조건으로 거르기' 단추와 같은 키(켜기·끄기 공유)
-                          on_click=lambda name: toggle_value(KEYS[dim], name, multi=True, reset=PAGE))
+                          on_click=lambda name: (toggle_value(KEYS[dim], name, multi=True, reset=PAGE), _open_cards()))
 
     # ---- 직무 막대(왼쪽) + 지역 지도(오른쪽) 연동 (요청 N5: 03 '지도 + 키워드 막대'와 같은 형태, 좌우 반대) ----
     # 지도에 마우스 = 그 지역의 직무별 공고로 막대가 바로 바뀜, 지도 클릭 = 지역 필터, 막대 클릭 = 직무 필터.
@@ -156,8 +163,8 @@ def render() -> None:
                       if not def_only else "방산 관련 기업만 보는 중에는 비교할 '그 외' 공고가 없습니다.")
         linked_chart_map(dict(zip(rc.province_name, rc.n)), views, home, selected_regions=reg_f, unit="건",
                          key="h_job_region",
-                         on_region=lambda name: toggle_value(KEYS["province_name"], name, multi=True, reset=PAGE),
-                         on_bar=lambda name: toggle_value(KEYS["job_major_category"], name, multi=True, reset=PAGE))
+                         on_region=lambda name: (toggle_value(KEYS["province_name"], name, multi=True, reset=PAGE), _open_cards()),
+                         on_bar=lambda name: (toggle_value(KEYS["job_major_category"], name, multi=True, reset=PAGE), _open_cards()))
         # 03과 같게 칩 대신 안내 한 줄(고른 조건은 위 '필터 모두 해제'로 지움)
         st.caption("지도에 마우스를 올리면 왼쪽 막대가 그 지역 값으로 바뀌고, 누르면 그 지역 공고만 봅니다. "
                    "막대를 누르면 그 직무로 거릅니다(다시 누르면 해제).")

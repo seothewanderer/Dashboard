@@ -248,7 +248,7 @@ Terminology: **Defense** = records classified by `plan.md` §6.4 as *direct* (�
 | Chart hover emphasis | ECharts | highlight colour + glow on the hovered mark only (§8) |
 | Number count-up | KPI tiles | 900ms cubic ease-out (kept) |
 | Tile/card rise-in | KPI tiles, cards | 400ms / 200ms (kept) |
-| Home drone | M01/M02 | ring pulse 2s, float ±4px with ±1.2° tilt over 4s, rotor spin; rings stop when the menu is open (kept). *Proposed, user request D9:* menu closed = large drone 528×330px (`--hero-drone-w-lg`/`-h-lg`), open = 300×190px with the P1–P5 entries, size change 300ms `--ease-standard`; each click toggles open/closed |
+| Home drone | M01/M02 | Replaced on 2026-10-02 by the teammate-based 3D hero (§12.11, `components/home_hero`). The old SVG drone (ring pulse, float, D9 large/small sizes) was removed from the app |
 | Home icon hover | sidebar '홈' | flat → 3D once (~0.6s), holds while hovered (user request D3) |
 
 No bounces, no parallax. Everything above is disabled by `prefers-reduced-motion: reduce`; the drone also has a '움직임 멈추기' button (`ui.motion`). `--ease-standard` = `cubic-bezier(0.2,0,0,1)`, `--duration-fast` 150ms, `--duration-base` 200ms.
@@ -372,6 +372,128 @@ So when red is used for defense:
 - **Sidebar sub-menu (F7):** '채용 현황' / '기업 탐색' at 70% of the nav size (`--nav-sub-ratio` 0.7, 11.9px).
 - **Roadmap steps (F9):** a step holding items uses the sidebar active style (`--accent-soft` plus a 3px `--primary` inset bar).
 - **Side-by-side chart cards:** fill the row height, so neighbouring cards line up.
+
+### 12.11 P-round (user requests 2026-10-02, home from teammate + sidebar icons) — Proposed (not in source)
+
+Source: the teammate's home-only build (`home-only.html`). Values are copied from it into `core/theme.py` as `--hm-*` tokens (BASE for sizes/fonts, MODE for stage and airspace colours). They replace the D9 home drone in §10 for the home page.
+
+- **Home layout:** title → subtitle → summary card → drone stage → '이렇게 이용해 보세요' roadmap → FAQ → note.
+  - The title text stays ours ('드론 진로 탐색'). Its size follows the teammate's: 44/52, weight 800, -0.025em (`--hm-font-title`). The 64px `hero` type is no longer used on home.
+  - The old overview tiles ('이 대시보드에서 볼 수 있는 것'), the five '… 보기' buttons and the button-menu expander are removed (user decision).
+- **Summary card** (`components/home_hero`): one `--surface` panel, `--radius-lg`, a 1px inner line (`--text` at 7%), 4 columns split by 1px `--surface-3` rules.
+  - Label 600 13/18 `--text-2`. Value 700 clamp(26–34px)/40 `--text`, tabular figures. Unit 600 clamp(14–17px).
+  - Numbers count up over `countup_ms`. Columns drop to 2 below 1024px and to 1 below 560px.
+- **Drone stage:** 540px high, `--radius-lg`, background `--hm-stage-bg` (night gradient in dark, day mist in light).
+  - **Airspace canvas.** A seeded point-cloud of buildings, hills and ridges rises and fades in 15 slots.
+    - Object colour by height: ≤150m is teal/green, >150m is muted red.
+    - There is a dashed 150m limit line, up to 6 altitude labels, and a hover zone under the drone.
+    - Dark adds stars. Light adds a river, two bridges and atmospheric haze.
+    - Colours come from the `--hm-air-*` tokens as 'r,g,b'.
+  - **3D drone.** A silver foldable drone generated in code with Three.js 0.169.0 (`static/vendor/three`, served offline). Its motor lights are `--hm-motor-cw/ccw`. If 3D fails to load, an SVG drone (`--hm-sv-*`) takes its place.
+  - **Motion:**
+    - **First visit:** the drone flies in from 2 o'clock, outside the viewport, on a curve (2.4s), settles briefly, then moves closer.
+    - **Click the drone:** it steps back (smaller) and five panels unfold in a pentagon with 3D depth and a stagger. Click again or press Esc to close (the drone returns, bigger).
+    - **Hover a panel:** the drone turns toward it (yaw, pitch, bank) and dashed guide lines show.
+    - **Click a panel** (new; the teammate's version stayed in place):
+      - The panels fold, the drone turns and accelerates toward that panel and off-screen (~1.4s), then the page changes.
+      - Coming back to home, the drone returns from that panel's direction. Leaving through the sidebar means it returns from 2 o'clock.
+    - The pause/play icon (32px, top right) is the existing 'motion' setting.
+    - When motion is off or reduced motion is set, all flights are skipped.
+- **Roadmap guide:** 4 steps in one `--surface` panel.
+  - Each step has a 32px numbered circle (1px `--primary` ring, `--primary` 700 14px figure), and 1px `--surface-3` connectors run on the circles' centre line.
+  - Step titles are 700 16/24; bodies use `--font-body` in `--text-2`.
+  - Steps follow the page order 01→04, which is also the order of 나의 탐색 경로 01–04. A caption below says so.
+  - Layout: 2 columns below 1024px; a vertical rail below 767px.
+- **FAQ:** a section title, then the existing expanders. The content was rewritten for the current features (red defense colour, card expanders, search box, star/bookmark, 내 조건, motion button).
+- **Sidebar icons:** the 01–04 numbers are replaced by icons drawn as masks in the text colour, the same way as the home icon: question mark, magnifier, book and people.
+  - At rest each shows its first frame; on hover its GIF motion plays once. The column stays 22px (`--nav-icon`) inside 36px (`--nav-no-w`).
+  - Stroke weight matches the home icon (user decision). The 24px people icon is redrawn as clean circles and arcs with the same per-part motion as the GIF (`scripts/make_nav_icons.py`).
+
+- **Q-round follow-up (2026-10-02):**
+  - **Sidebar icons** (not home): on hover the GIF motion now loops for as long as the pointer stays, like the 01 KPI card icons. The home icon still plays once and holds.
+  - **Menu panels:**
+    - The 'P1–P5' prefixes are removed. Each title starts with a 20px static icon (`--hm-panel-icon`) in `--primary`, drawn as a mask from the first frame:
+      - 산업 이해 = question mark
+      - 직무 탐색 = magnifier
+      - 준비 역량 = book
+      - 채용 공고 = people
+      - 기업 탐색 = the 01 KPI building
+    - Title 700 16/22 and description 400 13/20 (were 14/20 and 12/18).
+    - Padding 12px top and bottom (`--hm-panel-pad-y`); width 216px so the larger text fits.
+  - **Drone gaze:** before and after the menu opens, the drone looks toward the pointer anywhere on the stage, with the same yaw/pitch/bank/offset as a panel hover.
+    - The gaze is weaker near the drone itself.
+    - Over a panel it looks at the panel's centre.
+    - Leaving the stage, or moving over the summary card, returns it to facing forward.
+
+- **R-round — home summary card (2026-10-02), user chose option C:**
+  - Still one `--surface` panel with 1px `--surface-3` dividers.
+  - **Each cell is a button.** Layout, left to right: a 34px icon (`--hm-kpi-icon`, `--primary` mask), then the label and value, then an 8px chevron (`--hm-kpi-go`).
+  - **Icons:** 직무 = hand-raised person, 학습 = diploma, 공고 = two sheets, 기업 = building.
+    - The icons are made the same way as the 01 KPI icons (`make_kpi_icons.py`).
+    - At rest they show the first frame. On hover the motion loops, unless motion is off.
+  - **Hover:** the same style as the drone menu panels — `--accent-soft` background, a 3px `--primary` inset bar on the left, and a green chevron that moves 4px.
+  - **Click** goes straight to the page, with no drone flight:
+    - 직무 → 02
+    - 학습 → 03
+    - 공고 → 04 채용 현황
+    - 기업 → 04 기업 탐색
+  - The label '탐색 조직 · 개 조직' is renamed '관련 기업 · 개 기업'.
+
+- **S-round (2026-10-02):**
+  - **Home job icon:** the 24px hand-and-person GIF is redrawn as clean circles and curves, with the same stroke as the other KPI icons.
+    - The motion is read from the source: the person dips into the palm and comes back, and the hand bobs 1px.
+    - The person is clipped above the palm line, so it looks as if it sinks into the hand.
+  - **'More' buttons under bar charts** (01 I02, 04 C01): no border. Only the label and chevron show.
+  - **04 C01** uses the 01 collapse: top 8 plus 2 preview rows that fade and blur, then a centred more button.
+  - **04 company page:**
+    - The defense-group chart (C01G) and its chips are removed.
+    - C01 and C04 sit side by side, 1:1.
+    - **C04 when 방산 강조 is off:** C04A, '기업의 채용 공고 노출'. It shows the top 10 companies with linked postings. Defense companies stay red (tier fill/decal) whatever the toggle state; the others use the green gradient.
+    - **C04 when 방산 강조 is on:** the defense-only chart, with the 0-posting names listed in a caption.
+
+- **T-round (2026-10-02):**
+  - **One defense bar style everywhere:** dark red → red gradient plus 45° decal, for both evidence tiers. This changes §9.1: the tier difference (direct vs candidate) is no longer drawn on bars.
+  - **Hovering a defense bar** keeps it red, adds a red (`--defense-strong`) glow and turns its value label red. Defense bars no longer switch to the green highlight.
+  - **04 C01** uses the same overlay bars as 01 I02 (total green plus the defense part).
+  - **Collapsed field charts** (01 and 04): picking a field from the blurred last row or below, by chip or bar, expands the list automatically.
+  - **Sidebar 04 parent:**
+    - The label navigates to 채용 현황.
+    - A separate 24px chevron (`--space-lg`) overlaid at the right edge only folds or unfolds the submenu.
+    - The active background sits on the row, so both read as one item.
+
+- **U-round, 04 C01 (2026-10-02):**
+  - **Basis switch:** a segmented control at the top of the card with three options — 기업 수, 공고 있는 기업 수, 연결 공고 수.
+    - Bar order, the collapse and the red defense part all follow the chosen basis.
+    - The footer meta switches between C01, C01P and C01N.
+  - **Co-occurrence:** when a field is picked, the same card shows a second overlay chart below it, titled '‘X’ 기업들이 함께 하는 분야' (`.chart-card__subhead`, card-title font).
+    - It lists the top 8 other fields, with their defense part in red.
+    - Clicking a bar switches the selection to that field.
+    - Under a posting basis, only companies with linked postings are counted.
+
+- **V-round (2026-10-02):**
+  - **Wording:** on screen, '방산 근거' becomes '방산 관련' (legends, subtitles, table headers, sort label, help text, group name '방산 관련 미확인'). Plain '방산 기업' is avoided so it does not read as an official designation.
+  - **C01 basis control:** one rounded track (`--surface-2`, `--radius-full`, 4px padding) holding three pill buttons — 전체 기업 수, 채용 기업 수, 채용 공고 수.
+    - Only the chosen pill is inverted: `--select-bg` / `--select-fg` (white in dark mode, black in light). This is the same pattern as the sidebar theme switch.
+    - The default is 전체 기업 수.
+
+- **W-round (2026-10-02):**
+  - **Single-choice button groups** (segmented controls, e.g. 정렬, 03 분류 and 후보 그룹, 04 C01 기준) all use the rounded track with only the chosen pill inverted (§V).
+    - Underline tabs (04 하위 탭, 03 찾는 방식) keep their tab style.
+    - Multi-select chips keep their own style.
+  - **Card lists** use one pager: '전체 N개 중 a~b  ‹ 이전 10개  현재 / 전체  다음 10개 ›'.
+    - The pager wraps around: 'previous' on the first page goes to the last page, and 'next' on the last page goes to the first.
+    - It replaces the company-list '기업 더보기' popup.
+
+- **X-round (2026-10-02), card expanders behave the same on every page:**
+  - Closed by default.
+  - Picking something from a chart or its linked chips/search opens the filtered cards automatically. Clearing a selection does not close them (the 03 rule). Trigger controls per page:
+    - 01: tech and application bars
+    - 02: network major/middle, 하는 일 chips, search
+    - 03: map and keyword bars
+    - 04 postings: job bars, map, education/career chips, region
+    - 04 companies: field bars/chips, co-occurrence bars, keyword
+  - Opening does not scroll. Only the explicit '보러가기' buttons scroll.
+  - **04 company cards:** the defense-only toggle and the sort control share one row, and the 정렬 label is hidden.
 
 ### 12.10 O-round (user requests 2026-10-02, global + 02) — Proposed (not in source)
 

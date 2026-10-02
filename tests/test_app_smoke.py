@@ -62,11 +62,20 @@ def test_sidebar_submenu_and_center_tab_share_state():
     assert at.query_params[routing.SUB_KEY] == ["postings"]
 
 
-def test_home_entry_opens_recruit_sub():
+def test_home_drone_entry_then_return_from_last_panel():
+    # 요청 P1: 첫 방문 = 진입 비행, 다른 화면에서 돌아오면 = 마지막에 누른 패널 방향에서 복귀(한 방문에 한 번)
     at = run()
-    at.button(key="home_recruit_companies").click().run()
     assert not at.exception
-    assert at.session_state[routing.SUB_KEY] == "companies"
+    assert at.session_state["_home_entry"] == {"visit": 1, "kind": "first", "panel": None}
+    at.switch_page("views/p02_jobs.py").run()
+    at.session_state["_home_return"] = 1          # 홈에서 P2 패널을 눌러 떠났다고 가정(부품 트리거는 브라우저에서만)
+    at.switch_page("views/home.py").run()
+    assert at.session_state["_home_entry"] == {"visit": 2, "kind": "return", "panel": 1}
+    at.run()                                      # 같은 방문 안의 다시 실행: 같은 값(다시 날지 않음)
+    assert at.session_state["_home_entry"]["visit"] == 2
+    at.switch_page("views/p03_learning.py").run()
+    at.switch_page("views/home.py").run()         # 사이드바로 나갔다 오면 패널 없음(2시 방향)
+    assert at.session_state["_home_entry"] == {"visit": 3, "kind": "return", "panel": None}
 
 
 def test_sub_is_kept_after_visiting_another_page():

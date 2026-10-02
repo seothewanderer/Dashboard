@@ -1,0 +1,51 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "drone-dashboard",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "main/run.ps1",
+        "--server.headless",
+        "true",
+        "--server.port",
+        "8501"
+      ],
+      "port": 8501
+    },
+    {
+      "name": "html-share",
+      "runtimeExecutable": "main/.venv/Scripts/python.exe",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8777",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "main/html"
+      ],
+      "port": 8777
+    },
+    {
+      "name": "drone-dashboard-check",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "main/run.ps1",
+        "--server.headless",
+        "true",
+        "--server.port",
+        "8502"
+      ],
+      "port": 8502
+    }
+  ]
+}

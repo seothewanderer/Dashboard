@@ -42,8 +42,10 @@ def test_area_counts_exclude_self_and_count_unique(comp):
 
 
 def test_area_counts_apply_other_filters(comp):
-    f = C.CompanyFilters(defense_group=[D.DIRECT])
-    assert C.area_counts(comp, f)["n"].max() <= 4
+    # 분야 자기 필터만 빼고 나머지 조건(여기서는 '수집 공고 연결됨')은 적용된다. 근거 집단 필터는 삭제(요청 S2)
+    linked = C.area_counts(comp, C.CompanyFilters(has_posting=True))
+    assert linked["n"].max() < C.area_counts(comp, C.CompanyFilters())["n"].max()
+    assert linked["n"].sum() <= int(comp["has_posting"].sum()) * len(linked)
 
 
 def test_filter_sort_paginate_order(comp):
@@ -57,9 +59,12 @@ def test_filter_sort_paginate_order(comp):
     assert set(first.company_id).isdisjoint(second.company_id)
 
 
-def test_no_selection_is_name_order(comp):
+def test_no_selection_still_defense_first(comp):
+    # 요청 X2: 분야·키워드를 고르지 않아도 자동 정렬은 방산 관련 우선, '이름순'을 고르면 이름순
     out = C.sort_companies(comp, C.CompanyFilters())
-    assert out["company_name_normalized"].is_monotonic_increasing
+    rank = out["defense_group"].map({g: i for i, g in enumerate(D.GROUP_ORDER)})
+    assert rank.is_monotonic_increasing
+    assert C.sort_companies(comp, C.CompanyFilters(), "name")["company_name_normalized"].is_monotonic_increasing
 
 
 def test_keyword_does_not_pull_unrelated_defense_companies(comp):
@@ -222,3 +227,26 @@ def test_recruit_keyword_counts_word_boundary():
     kw = pd.DataFrame({"keyword_normalized": ["C", "SW", "C++", "Pixhawk"], "posting_count": [3, 2, 5, 9]})
     out = L.recruit_keyword_counts(kw, courses).set_index("keyword")["n"].to_dict()
     assert out == {"C": 1, "SW": 1, "C++": 1}
+
+
+def test_area_basis_counts_match_existing(comp):
+    # 요청 U1: '기업 수' 기준은 01·C01 기존 값(area_counts·area_defense_counts)과 같다
+    f = C.CompanyFilters()
+    b = C.area_basis_counts(comp, f, "companies").set_index("business_category")
+    a = C.area_counts(comp, f).set_index("business_category")["n"]
+    assert b["n"].to_dict() == a.to_dict()
+    d = C.area_defense_counts(comp, f)
+    assert {k: v for k, v in b["defense"].items() if v} == d
+    posted = C.area_basis_counts(comp, f, "posted").set_index("business_category")["n"]
+    assert all(posted[k] <= a[k] for k in posted.index)            # 공고 있는 기업 ⊂ 기업
+    n = C.area_basis_counts(comp, f, "postings")["n"]
+    assert n.sum() >= int(comp["posting_count"].sum()) - int(comp.loc[comp["areas"].str.len().eq(0), "posting_count"].sum())
+
+
+def test_area_cooccurrence(comp):
+    # 요청 U2: 고른 분야와 '분야 미수록'은 빼고, 값은 고른 분야 기업 수를 넘지 않는다
+    f = C.CompanyFilters(area=["방역/방제/살포"])
+    co = C.area_cooccurrence(comp, f, f.area)
+    picked = len(C.filter_companies(comp, f))
+    assert "방역/방제/살포" not in set(co.business_category) and C.NO_AREA not in set(co.business_category)
+    assert co["n"].max() <= picked and (co["defense"] <= co["n"]).all()

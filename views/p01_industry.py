@@ -51,7 +51,7 @@ with st.expander("연도별 추이와 제작·활용 구성 보기", key="i01_tr
                 charts.render(opt, f"i01_trend_{field}", h)
         st.caption("조사 표본이 해마다 달라 연도 차이를 성장률로 해석하지 않습니다.")
 
-# ---- I02 분야 (전체 폭, 요청 F1) — 방산 근거 기업 수 겹침(요청 H2) ----
+# ---- I02 분야 (전체 폭, 요청 F1) — 방산 관련 기업 수 겹침(요청 H2) ----
 comp = company_frame()
 filters = C.CompanyFilters()
 counts = C.area_counts(comp, filters)
@@ -61,6 +61,13 @@ selected = st.session_state.get(AREA_KEY)
 
 def _toggle_area(name: str) -> None:
     st.session_state[AREA_KEY] = None if st.session_state.get(AREA_KEY) == name else name
+    _reveal()
+
+
+def _reveal() -> None:
+    """접힌 상태에서 안 보이는 분야(흐린 맨 아래 줄부터)를 칩·막대로 고르면 '분야 더보기'를 자동으로 펼친다(요청 T2)."""
+    if st.session_state.get(AREA_KEY) in set(counts.business_category.iloc[TOP_N + PREVIEW_N - 1:]):
+        st.session_state["ind_area_all"] = True
 
 
 show_all = st.session_state.get("ind_area_all", False)
@@ -68,12 +75,12 @@ show_all = st.session_state.get("ind_area_all", False)
 view = counts if show_all else counts.head(TOP_N + PREVIEW_N)
 if selected and selected not in set(view["business_category"]):
     view = pd.concat([view, counts[counts.business_category.eq(selected)]])
-with chart_card("I02", subtitle="분야를 누르면 그 분야의 일과 기업으로 이어집니다 · 빨강 = 그중 방산 근거 기업·기관",
+with chart_card("I02", subtitle="분야를 누르면 그 분야의 일과 기업으로 이어집니다 · 빨강 = 그중 방산 관련 기업·기관",
                 table=counts.assign(defense=counts.business_category.map(defense).fillna(0).astype(int)).rename(
-                    columns={"business_category": "분야", "n": "기업·기관 수", "defense": "그중 방산 근거"}), n=len(comp)):
+                    columns={"business_category": "분야", "n": "기업·기관 수", "defense": "그중 방산 관련"}), n=len(comp)):
     opt, h = charts.overlay_hbar(view["business_category"].tolist(), view["n"].tolist(),
                                  [int(defense.get(a, 0)) for a in view["business_category"]],
-                                 total_name="전체 기업·기관", part_name="방산 근거 기업·기관", unit="개",
+                                 total_name="전체 기업·기관", part_name="방산 관련 기업·기관", unit="개",
                                  selected=[selected] if selected else [], note="분야 간 중복 포함")
     with st.container(key="i02-full" if show_all or len(counts) <= TOP_N else "i02-fade"):
         charts.render(opt, "i02_bar", h, on_click=_toggle_area)
@@ -82,7 +89,7 @@ with chart_card("I02", subtitle="분야를 누르면 그 분야의 일과 기업
         st.button("접기" if show_all else f"분야 더보기 (전체 {len(counts)}개)", key="ind_area_more", type="secondary",
                   icon=":material/expand_less:" if show_all else ":material/expand_more:",
                   on_click=lambda: st.session_state.update({"ind_area_all": not show_all}))
-    st.pills("분야 선택", counts["business_category"].tolist(), key=AREA_KEY, label_visibility="collapsed")
+    st.pills("분야 선택", counts["business_category"].tolist(), key=AREA_KEY, label_visibility="collapsed", on_change=_reveal)
 
 if selected:
     rel = load_table("business_area_defense")

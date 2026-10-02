@@ -81,12 +81,17 @@ def _decal() -> dict:
 
 
 def defense_style(tier: str | None, highlight: bool) -> dict:
-    """tier: 'direct' | 'candidate' | None(일반)."""
-    if tier == "direct":
+    """tier: 'direct' | 'candidate' | None(일반). 방산 막대는 근거 단계와 관계없이 모든 그래프에서 같은 모양
+    (진한 빨강 → 빨강 + 빗금, 요청 T3 — 겹친 막대·얇은 막대와 통일)."""
+    if tier:
         return {"color": dgrad(), "decal": _decal()}
-    if tier == "candidate":
-        return {"color": c("defense-candidate"), "decal": _decal(), "borderColor": c("defense-strong"), "borderWidth": 1}
     return {"color": c("chart-muted") if highlight else grad()}
+
+
+def defense_emphasis() -> dict:
+    """방산 막대 hover: 빨강 그대로 + 빨간 글로우(초록으로 바뀌지 않게, 요청 T3)."""
+    return {"itemStyle": {"color": dgrad(), "decal": _decal(), "shadowBlur": G["glow"], "shadowColor": c("defense-strong")},
+            "label": {"color": c("defense-strong")}}
 
 
 def dgrad(horizontal: bool = True) -> dict:
@@ -153,7 +158,7 @@ def hbar(categories: list[str], values: list[float], *, selected: list[str] | No
         if selected and tier is None and not highlight:
             style["color"] = c("chart-highlight") if cat in selected else c("chart-dim")
         data.append({"value": v, "name": cat, "share": round(v / total * 100, 1), "rank": order[v],
-                     "itemStyle": style})
+                     "itemStyle": style, **({"emphasis": defense_emphasis()} if tier else {})})
     options = {
         "grid": {"left": G["pad"], "right": G["value_gutter"], "top": G["pad_sm"], "bottom": G["pad_sm"],
                  "containLabel": True},
@@ -191,7 +196,8 @@ def stacked_hbar(categories: list[str], series: list[tuple[str, list[float], str
                              for i, (cat, v) in enumerate(zip(categories, values))],
                     "label": {"show": last, "position": "right", "color": c("text"), "fontWeight": 700,
                               "fontSize": theme.px("body"), "formatter": JsCode("function(p){return p.data.total;}")},
-                    "emphasis": {"focus": "none", "itemStyle": {"shadowBlur": G["glow"], "shadowColor": c("chart-highlight")}}})
+                    "emphasis": {"focus": "none", "itemStyle": {"shadowBlur": G["glow"], "shadowColor": c(
+                        "defense-strong" if kind == "defense" else "chart-highlight")}}})
     options = {
         "legend": _legend(),
         "grid": {"left": G["pad"], "right": G["value_gutter"], "top": 3 * G["pad"] + G["pad_sm"], "bottom": G["pad_sm"],

@@ -5,7 +5,7 @@
 import pandas as pd
 
 DIRECT, CROSS, ADJACENT, UNCONFIRMED, UNLINKED = (
-    "원문 직접확인", "교차출처 후보", "방산인접 탐색후보", "방산 근거 미확인", "기업 미연결")
+    "원문 직접확인", "교차출처 후보", "방산인접 탐색후보", "방산 관련 미확인", "기업 미연결")   # 화면 이름(요청 V1)
 GROUP_ORDER = [DIRECT, CROSS, ADJACENT, UNCONFIRMED]          # 기업 차트·정렬 순서
 POSTING_GROUP_ORDER = GROUP_ORDER + [UNLINKED]                # 공고 차트 전용
 DEFENSE_GROUPS = [DIRECT, CROSS, ADJACENT]                    # '방산 관련만 보기' 기본 포함

@@ -1,5 +1,5 @@
 """상세 팝업 (plan.md 8.3, research 3.4·8.2). st.dialog는 한 번에 하나라 팝업 하나(detail)가
-state.dialog의 kind/id에 따라 내용을 바꾼다: job · posting · company · company_list(기업 더보기).
+state.dialog의 kind/id에 따라 내용을 바꾼다: job · posting · company. (기업 더보기 팝업은 카드 넘기기로 바뀌어 삭제, 요청 W2)
 app.py가 매 실행 끝에 render_open()을 호출해 열린 팝업을 유지하고, 닫으면 상태를 비운다.
 """
 from html import escape
@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from analytics import postings as P
-from analytics.common import paginate, split_tags
+from analytics.common import split_tags
 from components import tables
 from components.badges import badge, defense_badge, draft_badge
 from components.icon_button import icon_button
@@ -144,31 +144,7 @@ def _company(company_id: str) -> None:
             _go("recruit", sub="companies", handoff={"company_ids": [company_id]})
 
 
-# ---------------- 기업 더보기 목록 (research 3.2: 팝업도 최대 10개) ----------------
-def _company_list(_: str | None) -> None:
-    ranked = st.session_state.get("_company_ranked")
-    if ranked is None:
-        st.caption("목록을 다시 불러오세요.")
-        return
-    page_no = st.session_state["page"]["companies"].get("more_page", 1)
-    rows, total = paginate(ranked, page_no)
-    last = max(0, (total - 1) // 10)
-    _head("기업 더보기", f"조건에 맞는 기업·기관 {total}개 중 {page_no * 10 + 1}~{page_no * 10 + len(rows)}")
-    for r in rows.itertuples():
-        with st.container(horizontal=True, key=f"dlg-list-{r.company_id}"):
-            st.html(f'<p class="dlg-list__name">{escape(r.company_name_normalized)} {defense_badge(r.defense_group)}</p>')
-            if st.button("상세", key=f"dlg:list:{r.company_id}", type="tertiary"):
-                _switch("company", r.company_id, return_to="company_list")
-    with st.container(horizontal=True):
-        if st.button("이전 10개", disabled=page_no <= 1, key="dlg:list:prev"):
-            st.session_state["page"]["companies"]["more_page"] = page_no - 1
-            st.rerun(scope="fragment")
-        if st.button("다음 10개", disabled=page_no >= last, key="dlg:list:next"):
-            st.session_state["page"]["companies"]["more_page"] = page_no + 1
-            st.rerun(scope="fragment")
-
-
-RENDER = {"job": _job, "posting": _posting, "company": _company, "company_list": _company_list}
+RENDER = {"job": _job, "posting": _posting, "company": _company}
 
 
 @st.dialog("상세 보기", width="large", on_dismiss=_close)
@@ -176,8 +152,7 @@ def _detail() -> None:
     d = st.session_state["dialog"]
     back = d.get("return_to")
     if back:
-        label = "목록으로" if back == "company_list" else "이전 상세로"
-        if st.button(label, key="dlg:back", type="tertiary", icon=":material/chevron_left:"):
+        if st.button("이전 상세로", key="dlg:back", type="tertiary", icon=":material/chevron_left:"):
             kind, _, eid = back.partition(":")
             _switch(kind, eid or None)
     RENDER[d["kind"]](d["id"])

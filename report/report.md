@@ -1,5 +1,173 @@
 # report.md — 변경 기록
 
+### 2026-10-02 — 집(새 PC) 환경용 guide 폴더
+- Type: Feature (개발 환경)
+- Summary:
+  - guide/ 폴더 추가(개인 저장소 전용, 팀 저장소 제외 목록에 추가).
+    - README: 순서 안내.
+    - setup.ps1: Python 3.12 확인 → .venv → requirements-lock 설치 → build_data → pytest. -CopyClaude로 메모리·launch.json 복사, 이미 있으면 건너뜀. BOM 저장, 문법 검사 통과.
+    - HANDOFF.md: 결정·대기 중 질문·다음 할 일.
+    - claude/memory·claude/launch.json 복사본.
+  - .venv·대화 기록 원본은 올리지 않음.
+- Files: guide/README.md, guide/setup.ps1, guide/HANDOFF.md, guide/claude/(memory 8개, launch.json)
+- Docs updated: none
+
+### 2026-10-02 — 22차 수정: 기업 정렬 한 줄·전체에도 방산 우선, 카드 자동 펼침 일관화
+- Type: Feature / Design
+- Summary: 요청 X.
+  - 기업 카드: '방산 관련만 보기' + 정렬 한 줄(정렬 글자 숨김). 자동 정렬은 분야·키워드를 고르지 않은 전체에도 방산 관련 우선(이전 '미선택이면 이름순' 규칙을 사용자 지시로 변경, 테스트도 바꿈).
+  - 카드 펼치기를 03 규칙(기본 닫힘, 그래프·연결 칩·검색으로 고르면 펼침, 해제해도 닫지 않음)으로 02·04 채용 현황·04 기업 탐색에 통일. 기업 카드는 예전 '조건이 좁혀지면 펼침'(키 없음)에서 같은 규칙의 열림 상태 키로 바꿈.
+  - 확인(8502, 1440×900):
+    - 기업 카드 기본 닫힘, 한 줄 정렬, 전체 264개에서 니어스랩·유비파이(방산 관련) 먼저.
+    - 공간정보 칩 → 기업 카드 펼침, 대졸 칩 → 공고 카드 펼침, 02 대분류 → 직무 카드 펼침.
+  - 테스트 81개 통과.
+- Files: analytics/companies.py, views/recruit/companies.py, views/recruit/postings.py, views/p02_jobs.py, tests/test_analytics.py
+- Docs updated: plan.md(9.6), design/DESIGN.md(§12.11)
+
+### 2026-10-02 — '기업 더보기' 팝업 코드 삭제
+- Type: Removal
+- Summary: 사용자 승인으로 삭제. 21차 수정에서 카드 넘기기로 바뀌어 쓰이지 않게 된 components/dialogs.py의 _company_list, RENDER 'company_list', '목록으로' 분기, paginate import. 기업 탐색에서 쓰던 '_company_ranked'·more_page는 이미 쓰이지 않음. 테스트 통과.
+- Files: components/dialogs.py
+- Docs updated: none
+
+### 2026-10-02 — 21차 수정: 선택 단추 둥근 묶음 통일, 카드 넘기기(현재/전체·순환)
+- Type: Design / Feature
+- Summary: 요청 W.
+  - 모든 화면의 하나만 고르는 단추 묶음(segmented_control)을 C01 기준 단추처럼 둥근 한 덩어리 + 고른 것만 반전으로 통일(밑줄 탭 모양 제외).
+  - 공통 넘기기를 '이전 10개 · 현재/전체 · 다음 10개'로 바꾸고 순환 이동(1/27에서 이전 → 27/27).
+  - 기업 탐색 '기업 더보기' 팝업을 같은 넘기기로 바꿈.
+  - 확인(8502, 1440×900): 정렬 단추 모양, 1/27 → 27/27 → 1/27.
+  - 테스트 81개 통과.
+- Files: components/filters.py, views/recruit/companies.py, static/css/base.css
+- Docs updated: plan.md(9.6), design/DESIGN.md(§12.11)
+
+### 2026-10-02 — 20차 수정: '방산 관련' 문구, C01 기준 단추 묶음, 채용 공고 기준일
+- Type: Design / Content
+- Summary: 요청 V.
+  - 화면의 '방산 근거'를 '방산 관련'으로 바꿈(01 I02, 04 C01·함께 하는 분야·토글 도움말·정렬, 그래프 설명, 집단 이름 '방산 관련 미확인').
+  - C01 기준 단추 3개를 한 덩어리 둥근 틀에 넣고, 고른 것만 반전. 이름은 전체 기업 수 / 채용 기업 수 / 채용 공고 수(사용자 결정: '채용 중인' 대신 '채용').
+  - 채용 공고 기준일을 2026년 9월 18일로 통일(사용자가 수집 일자를 확인해 정정, 이전 기록의 9월 14일을 바로잡음).
+    - content/module_meta.POSTINGS_AS_OF 하나를 04 KPI·홈 요약 카드·홈 안내·FAQ가 함께 씀.
+    - FAQ '채용 공고와 교육은 언제 기준인가요?': 9월 18일 기준 채용 중이던 공고, 채용 기업 = 그 공고를 낸 곳, 이후 변동은 원문 확인.
+  - 확인(8502, 1440×900, 라이트): 단추 묶음·반전, 채용 기업 수 전환, 04 KPI '2026년 9월 18일 수집 기준', 홈 FAQ 새 질문.
+  - 테스트 81개 통과.
+- Files: analytics/companies.py, analytics/defense.py, views/recruit/companies.py, views/recruit/postings.py, views/p01_industry.py, views/home.py, content/module_meta.py, content/usage_guide.py, static/css/base.css
+- Docs updated: design/DESIGN.md(§12.11)
+
+### 2026-10-02 — 19차 수정: 기업 탐색 분야 그래프 기준 바꾸기 + 함께 하는 분야
+- Type: Feature
+- Summary: 요청 U(구상안 A·B).
+  - C01 위 단추로 기준 전환(기업 수 / 공고 있는 기업 수 / 연결 공고 수). 막대 순서·더보기·방산 빨강이 기준을 따름.
+  - 분야를 고르면 카드 안 아래에 '그 분야 기업들이 함께 하는 분야' 겹친 막대(상위 8). 막대를 누르면 그 분야로 바꿔 봄.
+  - B는 처음 제안처럼 같은 막대에 겹치면 세 겹이 되어 읽기 어려워 아래에 따로 둠.
+  - 새 계산: analytics/companies.area_basis_counts·area_cooccurrence. '기업 수' 기준은 기존 값과 같음(테스트).
+  - 확인(8502, 1440×900):
+    - 공고 있는 기업 수 → 감시·정찰·수색 14.
+    - 방역/방제/살포 선택 → 함께 하는 분야(감시·정찰·수색 65 등).
+    - 공간정보 막대 클릭 → 선택 전환.
+  - 테스트 81개 통과(2개 추가).
+- Files: analytics/companies.py, views/recruit/companies.py, content/module_meta.py(C01P·C01N), static/css/base.css, tests/test_analytics.py
+- Docs updated: plan.md(9.6), design/DESIGN.md(§12.11)
+
+### 2026-10-02 — 18차 수정: 기업 탐색 분야 막대·빨간 막대 통일·사이드바 펼치기 단추
+- Type: Design / Feature
+- Summary: 요청 T.
+  - 04 C01에 방산 빨간 겹친 막대(01과 같음).
+  - 01·04 숨은 분야 선택 시 '분야 더보기' 자동 펼침.
+  - 모든 방산 막대 모양 통일(근거 단계 구분 없이 빨강+빗금)과 hover 시 빨강 유지(빨간 글로우).
+  - 사이드바 04: 이름 = 채용 현황 이동, ^ = 하위 메뉴 펼치기·접기만.
+  - 확인(8502, 1440×900):
+    - 기업 탐색 C01 빨간 막대, 공고 노출 빨강 통일.
+    - ^ 두 번 = 접힘·펼침(주소 그대로), 이름 = /recruit?sub=postings.
+    - 01 환경측량 칩 → 자동 펼침.
+  - hover 빨강 유지는 차트 설정으로 반영했고, 화면 캡처 확인은 미리보기 창이 그려지지 않아 못 함.
+  - 테스트 79개 통과.
+- Files: components/charts.py, views/recruit/companies.py, views/p01_industry.py, components/shell.py, static/css/base.css
+- Docs updated: design/DESIGN.md(§12.11)
+
+### 2026-10-02 — 방산 근거 집단 관련 코드 삭제
+- Type: Removal
+- Summary: 사용자 승인으로 삭제. 17차 수정에서 근거 집단 그래프·칩을 지우면서 쓰이지 않게 된 코드.
+  - analytics/companies.py: group_counts, CompanyFilters.defense_group과 그 필터 분기.
+  - content/module_meta.py: C01G.
+  - 테스트 test_area_counts_apply_other_filters는 근거 집단 필터 대신 '수집 공고 연결됨' 필터로 같은 규칙(분야 자기 필터만 제외)을 확인하게 바꿈.
+  - 테스트 79개 통과.
+  - HTML 공유본(scripts/interactive/pages.js)의 예전 기업 탐색은 아직 C01G를 쓴다. 다음 공유본에서 앱과 맞출 때 정리한다.
+- Files: analytics/companies.py, content/module_meta.py, views/recruit/companies.py, tests/test_analytics.py
+- Docs updated: none
+
+### 2026-10-02 — 17차 수정: 홈 직무 아이콘 + 04 기업 탐색 그래프 정리
+- Type: Design / Feature / Removal
+- Summary: 요청 S.
+  - 홈 요약 카드 직무 아이콘: 24px 원본을 원·곡선으로 다시 그림(움직임은 원본에서 읽음, 굵기는 다른 KPI 아이콘과 같게).
+  - 04 기업 탐색:
+    - C01 '분야 더보기'를 01과 같은 흐림 미리보기 + 단추로 바꿈. 더보기 단추 테두리는 01·04 모두 없앰.
+    - '방산 근거 집단' 그래프와 근거 집단 칩 필터 삭제(사용자 지시). C01 옆(5:5)에 채용 공고 노출을 둠.
+    - 채용 공고 노출: '방산 강조' 꺼짐 = 기업 전체 상위 10(방산 빨강), 켜짐 = 방산 관련 기업만.
+  - 확인(8502, 1440×900, 라이트):
+    - 기업 탐색 = 흐린 더보기, 테두리 없음, 23곳 중 10곳(방산 빨강).
+    - 방산 강조 켜면 '방산 관련 기업의 채용 공고 노출'(42곳 중 10곳). 01 더보기 테두리 없음.
+    - 홈 직무 아이콘 선 깔끔.
+  - 테스트 79개 통과.
+- Files: scripts/make_kpi_icons.py, static/img/kpi_job_*.webp, views/recruit/companies.py, content/module_meta.py(C04A 추가), static/css/base.css
+- Docs updated: plan.md(9.6), design/DESIGN.md(§12.11)
+
+### 2026-10-02 — 16차 수정: 홈 요약 카드(누르면 이동 + 아이콘)
+- Type: Feature / Design
+- Summary: 요청 R, 사용자 선택 C안.
+  - 요약 카드 4칸이 단추가 됨: 왼쪽 아이콘, 오른쪽 화살표. 직무 → 02, 학습 → 03, 공고 → 04 채용 현황, 기업 → 04 기업 탐색.
+  - hover는 드론 메뉴 패널과 같은 초록 배경 + 왼쪽 막대, 아이콘 GIF 반복.
+  - 아이콘: 손바닥 사람·디플로마(새 GIF), 종이 두 장·건물(기존 KPI 아이콘). make_kpi_icons.py에 job·learning 추가, 기존 아이콘은 바이트 그대로.
+  - '탐색 조직' → '관련 기업 · 264개 기업'.
+  - 확인(8502, 1440×900): 카드 hover(초록 배경·움직이는 아이콘), 직무 → /jobs, 관련 기업 → /recruit?sub=companies.
+  - 테스트 79개 통과.
+- Files: components/home_hero.js·.css·.py, views/home.py, core/theme.py, scripts/make_kpi_icons.py, static/img/kpi_job*·kpi_learning*(새)
+- Docs updated: design/DESIGN.md(§12.11)
+
+### 2026-10-02 — 예전 홈 드론 부품 삭제
+- Type: Removal
+- Summary: 사용자 승인으로 삭제.
+  - components/effects.py의 drone_hero(_DRONE_SVG·_HERO_CSS·_HERO_JS·부품 등록)를 지움. 14차 수정에서 home_hero로 바뀌어 쓰이지 않게 됨.
+  - 예전 드론 크기 값(theme --hero-* 7개)과 글자 크기 hero·nav-no는 HTML 공유본 빌드(scripts/interactive/app.css)의 예전 홈·사이드바가 아직 쓴다. 그래서 다음 공유본에서 홈을 옮길 때 함께 지운다(사용자 조건: 다음 공유본은 그때 기능 전부 구현).
+- Files: components/effects.py
+- Docs updated: plan.md(폴더 구조), design/DESIGN.md(§10 Home drone 행)
+
+### 2026-10-02 — 15차 수정: 사이드바 아이콘 반복, 드론 패널 아이콘, 드론 시선
+- Type: Design / Feature
+- Summary: 요청 Q.
+  - 사이드바 01~04 아이콘이 마우스를 올린 동안 계속 반복(01 KPI 카드처럼, 홈 아이콘은 그대로).
+  - 드론 메뉴 패널 5개:
+    - 'P1~P5' 글자를 삭제하고 정적 아이콘을 붙임(물음표·돋보기·책·사람·01 KPI 건물).
+    - 글자 14→16px·12→13px, 위아래 여백 8→12px, 폭 200→216px.
+  - 드론 시선: 메뉴를 펼치기 전후 모두 무대 위 마우스 쪽을 패널 hover와 같은 정도로 바라봄.
+  - 확인(8502, 1440×900, 라이트): 마우스 왼쪽 위·오른쪽 아래 → 드론 방향 바뀜, 패널 아이콘 5개 표시.
+  - 테스트 79개 통과.
+- Files: scripts/make_nav_icons.py, static/img/nav_*_hover.webp, components/home_hero.js·.css·.py, views/home.py, core/theme.py
+- Docs updated: design/DESIGN.md(§12.11)
+
+### 2026-10-02 — 14차 수정: 홈 화면(팀원 Home 반영) + 사이드바 아이콘
+- Type: Feature / Design / Removal
+- Summary: 요청 P(팀원 home-only.html 기준).
+  - 홈 = 제목 → 요약 카드 4개 → 3D 드론 무대 → 로드맵 이용 안내 → 자주 묻는 질문.
+  - 새 부품 home_hero:
+    - 공역 배경, Three.js 3D 드론, 5개 패널.
+    - 드론이 커지고 작아지는 동작, 날아오는 진입, 패널 바라보기.
+    - 패널 방향으로 날아간 뒤 그 화면으로 이동(팀원 판에 없던 부분). 홈에 돌아오면 그 방향에서 복귀.
+  - 사용자 결정에 따른 처리:
+    - Three.js 0.169.0은 내려받아 static/vendor/three에 둠.
+    - 제목·설명 문구는 유지.
+    - 대체 메뉴 펼치기, 산업 KPI 묶음, '○○ 보기' 단추 5개, 매출 캡션은 삭제.
+    - FAQ는 현재 기능 기준으로 다시 씀.
+  - 사이드바 01~04 번호는 물음표·돋보기·책·사람 아이콘으로 바꿈(마우스를 올리면 GIF 움직임 재생, 선 굵기는 홈 아이콘 기준). 사람 아이콘은 선을 다시 그림.
+  - 팀원 값(크기·색)은 theme.py --hm-* 토큰으로 옮김.
+  - 확인(8502, 1440×900, 다크·라이트):
+    - 첫 진입 비행, 메뉴 열기·닫기(Esc 포함), 패널 바라보기.
+    - P2 → 02 이동, 홈 복귀 시 오른쪽에서 돌아옴. P4 → 04 채용 현황(?sub=postings).
+    - 움직임 멈춤, 아이콘 hover 애니메이션.
+  - 테스트 79개 통과(홈 대체 단추 테스트 → 진입·복귀 비행 순서 테스트로 교체).
+- Files: components/home_hero.py·.js·.css(새), views/home.py, content/usage_guide.py, components/shell.py, core/theme.py, static/css/base.css, static/vendor/three/(새, LICENSE 포함), static/img/nav_*(새), scripts/make_nav_icons.py(새), tests/test_app_smoke.py
+- Docs updated: plan.md, design/DESIGN.md(§12.11)
+
 ### 2026-10-02 — 첫 git 커밋(중간 저장)
 - Type: Chore
 - Summary: main 폴더를 저장소 루트로 https://github.com/seothewanderer/Dashboard (main, 비공개)에 첫 커밋.

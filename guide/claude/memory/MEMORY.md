@@ -1,0 +1,6 @@
+- [결측 많은 데이터는 제외](feedback-exclude-high-missing-data.md) — 50% 이상 결측 컬럼은 과감히 제외, 이전·이후 작업 동일 적용
+- [드론 인력시장 대시보드(testDash)](project-drone-dashboard-testdash.md) — 결정 사항·구조·주의점
+- [드론 진로 탐색 본 구현(main)](project-drone-career-main.md) — 문서 체계·Python 3.12·폰트·선택색 결정
+- [main·개인 저장소 vs 팀 저장소](feedback-main-vs-team-repo.md) — 작업은 main, Dashboard는 개인 전용, dashboard_team은 team 폴더로만
+- [다음 HTML 공유본 조건](project-next-html-share.md) — 만들 때 앱 기능 전부(3D 홈 등), 그때 예전 드론 토큰 삭제
+- [집 환경용 git 계획](project-home-env-git-plan.md) — "집 환경을 위해 git 작업 하자" 하면 그대로 다시 안내할 guide 폴더·setup·메모리 이전 계획

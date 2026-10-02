@@ -63,6 +63,24 @@ BASE = {
     "--hero-h": "380px", "--hero-drone-w": "300px", "--hero-drone-h": "190px", "--hero-ring": "220px",
     "--hero-entry-w": "168px",
     "--hero-drone-w-lg": "528px", "--hero-drone-h-lg": "330px",   # 메뉴를 열기 전 큰 드론 (요청 D9)
+    # 홈 3D 드론 Hero·요약 카드·이용 안내 (팀원 Home 반영, 요청 P1~P3, Proposed (not in source)) — 값은 팀원 home-only.html 그대로
+    "--hm-h": "540px", "--hm-drone-w": "360px", "--hm-ring": "300px", "--hm-gap": "32px", "--hm-panel-w": "216px", "--hm-panel-pad-y": "12px", "--hm-panel-icon": "20px",   # 패널: 글자·여백 키움(요청 Q2)
+    "--hm-toggle": "32px", "--hm-toggle-icon": "14px", "--hm-label-px": "10px",
+    "--hm-kpi-pad-y": "22px", "--hm-kpi-pad-x": "clamp(16px,2.8cqi,28px)", "--hm-kpi-gap": "8px", "--hm-unit-gap": "4px", "--hm-kpi-icon": "34px", "--hm-kpi-go": "8px",   # 요약 카드 아이콘·화살표(요청 R)
+    "--hm-font-title": f"800 44px/52px {FONT_SANS}", "--hm-title-ls": "-0.025em", "--hm-title-gap": "10px",
+    "--hm-font-kpi-label": f"600 13px/18px {FONT_SANS}", "--hm-font-kpi-value": f"700 clamp(26px,3.4cqi,34px)/40px {FONT_SANS}",
+    "--hm-font-kpi-unit": f"600 clamp(14px,1.7cqi,17px)/22px {FONT_SANS}",
+    "--hm-font-panel": f"700 16px/22px {FONT_SANS}", "--hm-font-panel-desc": f"400 13px/20px {FONT_SANS}",
+    "--hm-guide-mt": "104px", "--hm-guide-pad": "36px 40px", "--hm-guide-col-gap": "32px", "--hm-guide-no": "32px",
+    "--hm-font-guide-no": f"700 14px/1 {FONT_SANS}", "--hm-font-guide-title": f"700 16px/24px {FONT_SANS}",
+    "--hm-guide-title-gap": "20px 0 8px", "--hm-faq-mt": "136px",
+    # 3D를 쓸 수 없을 때의 SVG 드론 색(모드 공통)
+    "--hm-sv-shadow": "#000000", "--hm-sv-arm-under": "#16181B", "--hm-sv-arm-top": "#4A4F56", "--hm-sv-mount": "#1C1E22",
+    "--hm-sv-band": "#0D0E10", "--hm-sv-bell": "#1A1C1F", "--hm-sv-shaft": "#C3C8CE", "--hm-sv-ghost": "#3A3E44",
+    "--hm-sv-spinner": "#2A2D31", "--hm-sv-spinner-line": "#8A9098", "--hm-sv-hull-line": "rgba(255,255,255,0.12)",
+    "--hm-sv-panel": "rgba(0,0,0,0.35)", "--hm-sv-vent": "rgba(0,0,0,0.45)", "--hm-sv-spec": "#FFFFFF",
+    "--hm-sv-edge": "rgba(255,255,255,0.22)", "--hm-sv-sensor": "#050608", "--hm-sv-sensor-line": "#3B4047",
+    "--hm-sv-gimbal": "#1E2024", "--hm-sv-lens": "#0B0C0E", "--hm-sv-lens-line": "#6D737B",
     # 그림자 (DESIGN §7 tooltip, §6.1 light level 3)
     "--shadow-tip": "0 4px 12px rgba(0,0,0,0.4)",
 }
@@ -109,6 +127,18 @@ MODE = {
         "--grad-start": "#15A448", "--grad-end": "#1ED760", "--grad-hover-start": "#1DB954", "--grad-hover-end": "#3BE477",
         "--chart-grad-start": "#15A448", "--chart-grad-end": "#1ED760",
         "--defense-soft": "rgba(226,33,52,0.16)", "--picked-shadow": "rgba(29,185,84,0.35)", "--holo-core": "rgba(29,185,84,0.10)", "--note-bg": "rgba(61,157,243,0.20)", "--note-fg": "#C7EBFF", "--note-hover": "rgba(61,157,243,0.25)", "--net-core": "#5CF294", "--net-major": "#2ECC6B", "--net-middle": "#22A556", "--net-job": "#53E076", "--holo-scan": "rgba(29,185,84,0.06)",   # 선택 카드 그림자(요청 L4)
+        # 홈 3D Hero 무대·공역 배경(야간, 요청 P1, Proposed) — 공역 색은 canvas용 'r,g,b'
+        "--hm-stage-bg": "radial-gradient(130% 85% at 50% 100%,rgba(24,42,58,.5),transparent 62%),linear-gradient(180deg,#13161B 0%,#171A1F 48%,#16191D 100%)",
+        "--hm-dim": "#000000", "--hm-dim-open": "0.045", "--hm-motor-cw": "#FF4A3D", "--hm-motor-ccw": "#2FE07C", "--hm-env": "0.6",
+        "--hm-air-mode": "night", "--hm-air-mesh": "128,146,166", "--hm-air-grid": "128,146,166", "--hm-air-low-a": "84,190,188",
+        "--hm-air-low-b": "96,184,132", "--hm-air-high-a": "212,104,84", "--hm-air-high-b": "200,74,72", "--hm-air-limit": "206,110,88",
+        "--hm-air-scan": "150,190,204", "--hm-air-txt-lo": "112,198,164", "--hm-air-txt-hi": "224,122,108", "--hm-air-plate": "0,0,0",
+        "--hm-air-plate-a": "0", "--hm-air-fill": "0.018", "--hm-air-wash": "0.022", "--hm-air-k": "1.16", "--hm-air-grid-k": "1",
+        "--hm-air-lw": "500", "--hm-air-blend": "lighter", "--hm-air-ridge": "92,116,140", "--hm-air-ridge-fill": "0.035",
+        "--hm-air-ridge-line": "1", "--hm-air-haze": "16,22,30", "--hm-air-haze-a": "0.35", "--hm-air-star": "200,214,232",
+        "--hm-air-star-a": "1", "--hm-air-ground": "168,200,186", "--hm-air-ground-b": "132,186,152", "--hm-air-ground-a": "0",
+        "--hm-air-ground-pts": "1", "--hm-air-water": "70,150,180", "--hm-air-water-a": "0.05", "--hm-air-glint": "140,214,228",
+        "--hm-air-reflect": "0.07", "--hm-air-shimmer": "0.14", "--hm-air-fog": "1.15", "--hm-air-ceil": "0.028",
     },
     "light": {
         "--bg": "#F9F6F5", "--sidebar-bg": "#F3F0EF", "--surface": "#FFFFFF", "--surface-2": "#F3F4F5",
@@ -123,6 +153,18 @@ MODE = {
         "--grad-start": "#04762F", "--grad-end": "#0A873A", "--grad-hover-start": "#036A2A", "--grad-hover-end": "#0B7A35",
         "--chart-grad-start": "#04762F", "--chart-grad-end": "#1AB050",
         "--defense-soft": "#FFE5E5", "--picked-shadow": "rgba(10,135,58,0.30)", "--holo-core": "rgba(10,135,58,0.07)", "--note-bg": "rgba(28,131,225,0.10)", "--note-fg": "#004280", "--note-hover": "rgba(28,131,225,0.12)", "--net-core": "#0B9A43", "--net-major": "#2BAE5C", "--net-middle": "#63C486", "--net-job": "#0A873A", "--holo-scan": "rgba(10,135,58,0.04)",   # 선택 카드 그림자(요청 L4)
+        # 홈 3D Hero 무대·공역 배경(주간: 다크 반전이 아닌 별도 설계, 요청 P1, Proposed)
+        "--hm-stage-bg": "radial-gradient(46% 58% at 50% 55%,rgba(222,230,234,.5),rgba(222,230,234,0) 70%),linear-gradient(180deg,#EDF2F5 0%,#F5F8F9 42%,#F7F9FA 100%)",
+        "--hm-dim": "#000000", "--hm-dim-open": "0.025", "--hm-motor-cw": "#FFF8EE", "--hm-motor-ccw": "#FFF8EE", "--hm-env": "0.82",
+        "--hm-air-mode": "day", "--hm-air-mesh": "114,141,150", "--hm-air-grid": "150,164,171", "--hm-air-low-a": "44,146,140",
+        "--hm-air-low-b": "46,140,108", "--hm-air-high-a": "212,104,92", "--hm-air-high-b": "190,80,76", "--hm-air-limit": "176,72,66",
+        "--hm-air-scan": "104,150,160", "--hm-air-txt-lo": "36,112,92", "--hm-air-txt-hi": "172,68,64", "--hm-air-plate": "248,250,251",
+        "--hm-air-plate-a": "0.55", "--hm-air-fill": "0.07", "--hm-air-wash": "0.07", "--hm-air-k": "1.42", "--hm-air-grid-k": "0",
+        "--hm-air-lw": "500", "--hm-air-blend": "source-over", "--hm-air-ridge": "116,140,162", "--hm-air-ridge-fill": "0.22",
+        "--hm-air-ridge-line": "1.9", "--hm-air-haze": "247,249,251", "--hm-air-haze-a": "0.7", "--hm-air-star": "200,214,232",
+        "--hm-air-star-a": "0", "--hm-air-ground": "176,206,190", "--hm-air-ground-b": "128,184,150", "--hm-air-ground-a": "0.26",
+        "--hm-air-ground-pts": "0.45", "--hm-air-water": "98,148,184", "--hm-air-water-a": "0.2", "--hm-air-glint": "76,128,162",
+        "--hm-air-reflect": "0.26", "--hm-air-shimmer": "0.08", "--hm-air-fog": "1.4", "--hm-air-ceil": "0.035",
     },
 }
 
@@ -161,12 +203,14 @@ def px(role: str) -> int:
 
 @functools.cache
 def _image_vars() -> dict[str, str]:
-    """사이드바 홈 아이콘(make_home_icon.py)·카드 버튼 별·책갈피(make_card_icons.py, 요청 L)를 CSS 변수(data URI)로."""
+    """사이드바 홈·01~04 아이콘(make_home_icon.py·make_nav_icons.py)·카드 버튼 별·책갈피(make_card_icons.py, 요청 L)를 CSS 변수(data URI)로."""
     img = ROOT / "static" / "img"
     home = {f"--home-icon-{n}": f"url(data:image/webp;base64,{base64.b64encode((img / f'home_{n}.webp').read_bytes()).decode()})"
             for n in ("rest", "hover")}
-    return home | {f"--card-{i}-{s}": img_uri(f"card_{i}_{s}") for i in ("star", "bookmark")
-                   for s in ("rest", "hover", "on", "off")}
+    nav = {f"--nav-icon-{k}-{s}": img_uri(f"nav_{k}_{s}") for k in ("industry", "jobs", "learning", "recruit")
+           for s in ("rest", "hover")}   # 사이드바 01~04 아이콘(make_nav_icons.py, 요청 P7)
+    return home | nav | {f"--card-{i}-{s}": img_uri(f"card_{i}_{s}") for i in ("star", "bookmark")
+                         for s in ("rest", "hover", "on", "off")}
 
 
 @functools.cache

@@ -16,7 +16,6 @@ NO_AREA = "분야 미수록"
 @dataclass
 class CompanyFilters:
     area: list[str] = field(default_factory=list)            # 같은 분류 안 OR
-    defense_group: list[str] = field(default_factory=list)
     has_posting: bool = False
     keyword: str = ""
 
@@ -58,8 +57,6 @@ def filter_companies(companies: pd.DataFrame, f: CompanyFilters, exclude: str | 
     if f.area and exclude != "area":
         ids = area_long(companies).query("business_category in @f.area")["company_id"]
         keep &= companies["company_id"].isin(ids)
-    if f.defense_group and exclude != "defense_group":
-        keep &= companies["defense_group"].isin(f.defense_group)
     if f.has_posting and exclude != "has_posting":
         keep &= companies["has_posting"]
     out = companies[keep]
@@ -87,16 +84,39 @@ def area_defense_counts(companies: pd.DataFrame, f: CompanyFilters) -> dict[str,
     return long.groupby("business_category")["company_id"].nunique().to_dict()
 
 
-def group_counts(companies: pd.DataFrame, f: CompanyFilters) -> pd.DataFrame:
-    base = filter_companies(companies, f, exclude="defense_group")
-    n = base["defense_group"].value_counts()
-    return pd.DataFrame({"defense_group": GROUP_ORDER, "n": [int(n.get(g, 0)) for g in GROUP_ORDER]})
+BASES = {"companies": "전체 기업 수", "posted": "채용 기업 수", "postings": "채용 공고 수"}   # C01 기준(요청 U1·V3)
+
+
+def area_basis_counts(companies: pd.DataFrame, f: CompanyFilters, basis: str = "companies") -> pd.DataFrame:
+    """분야별 값과 그중 방산 근거 값(business_category, n, defense) — 분야 자기 필터만 제외(area_counts와 같은 규칙).
+    basis: companies = 고유 기업·기관 수, posted = 그중 수집 공고가 연결된 기업 수, postings = 연결 공고 수 합(분야 간 중복)."""
+    base = filter_companies(companies, f, exclude="area")
+    long = area_long(companies).merge(base[["company_id", "posting_count", "has_posting", "defense_group"]], on="company_id")
+    if basis == "posted":
+        long = long[long["has_posting"]]
+    w = long["posting_count"] if basis == "postings" else 1
+    long = long.assign(w=w, d=long["defense_group"].isin(DEFENSE_GROUPS))
+    out = long.assign(dw=long["w"].where(long["d"], 0)).groupby("business_category").agg(n=("w", "sum"), defense=("dw", "sum"))
+    out = out[out["n"] > 0].astype(int).reset_index()
+    return out.sort_values(["n", "business_category"], ascending=[False, True], ignore_index=True)
+
+
+def area_cooccurrence(companies: pd.DataFrame, f: CompanyFilters, areas: list[str]) -> pd.DataFrame:
+    """고른 분야 기업들이 함께 하는 다른 분야(요청 U2): (business_category, n, defense). 고른 분야 기업 중 그 분야도 하는 고유 기업 수.
+    분야 외 조건은 적용, 고른 분야와 '분야 미수록'은 뺀다."""
+    base = filter_companies(companies, CompanyFilters(area=areas, has_posting=f.has_posting, keyword=f.keyword))
+    long = area_long(base)
+    long = long[~long["business_category"].isin([*areas, NO_AREA])].merge(base[["company_id", "defense_group"]], on="company_id")
+    long = long.assign(d=long["defense_group"].isin(DEFENSE_GROUPS))
+    out = long.groupby("business_category").agg(n=("company_id", "nunique"),
+                                                 defense=("company_id", lambda s: s[long.loc[s.index, "d"]].nunique()))
+    return out.reset_index().sort_values(["n", "business_category"], ascending=[False, True], ignore_index=True)
 
 
 def sort_companies(df: pd.DataFrame, f: CompanyFilters, mode: str = "auto") -> pd.DataFrame:
-    """auto: 분야·키워드 선택 시 결과 안에서 방산 우선(직접→교차→인접→미확인) → 일치도 → 이름.
-    선택이 없거나 mode='name'이면 이름순 (research 3.2)."""
-    if mode == "name" or not (f.area or f.keyword.strip()):
+    """auto: 결과 안에서 방산 관련 우선(직접→교차→인접→미확인) → 키워드 일치도 → 이름. 분야·키워드를 고르지 않은
+    전체일 때도 같다(요청 X2, 이전 research 3.2의 '미선택이면 이름순'을 바꿈). mode='name'이면 이름순."""
+    if mode == "name":
         return df.sort_values("company_name_normalized", ignore_index=True)
     rank = df["defense_group"].map({g: i for i, g in enumerate(GROUP_ORDER)})
     tier = df["match_tier"] if "match_tier" in df else 0
@@ -106,7 +126,7 @@ def sort_companies(df: pd.DataFrame, f: CompanyFilters, mode: str = "auto") -> p
 
 
 def is_sorted_by_defense(f: CompanyFilters, mode: str) -> bool:
-    return mode != "name" and bool(f.area or f.keyword.strip())
+    return mode != "name"
 
 
 def goal_reasons(companies: pd.DataFrame, job: pd.Series, application_bridge: pd.DataFrame) -> pd.Series:
